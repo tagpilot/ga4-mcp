@@ -218,4 +218,5 @@ only and not a supported way to run the published package. `GA4_MCP_ADMIN_API_UR
 
 ## License
 
-To be decided (currently `UNLICENSED`).
+[Apache License 2.0](LICENSE). Copyright 2026 Tag Concierge sp. z o.o. The license does
+not cover the Tag Pilot name or logo (see [NOTICE](NOTICE)).

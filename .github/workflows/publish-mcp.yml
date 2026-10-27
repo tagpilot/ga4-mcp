@@ -1,0 +1,46 @@
+name: Publish to MCP Registry
+
+# Publishes server.json to the official MCP Registry (registry.modelcontextprotocol.io) as
+# io.github.tagpilot/ga4-mcp. Authenticates with GitHub OIDC, which proves this repo belongs to
+# the tagpilot org, so no secrets are needed. The npm package must already be published with the
+# same version (npm publish stays a manual step for now).
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write # OIDC login to the registry
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Check versions (package.json, server.json, npm)
+        run: |
+          PKG=$(jq -r .version package.json)
+          SRV=$(jq -r .version server.json)
+          NAME=$(jq -r .name package.json)
+          MCPNAME=$(jq -r .mcpName package.json)
+          echo "package.json $PKG, server.json $SRV, mcpName $MCPNAME"
+          test "$PKG" = "$SRV" || { echo "::error::server.json version $SRV != package.json $PKG"; exit 1; }
+          test "$MCPNAME" = "$(jq -r .name server.json)" || { echo "::error::mcpName != server.json name"; exit 1; }
+          if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
+            test "${GITHUB_REF_NAME#v}" = "$PKG" || { echo "::error::tag ${GITHUB_REF_NAME} != v$PKG"; exit 1; }
+          fi
+          npm view "$NAME@$PKG" version >/dev/null || { echo "::error::$NAME@$PKG is not on npm yet; publish it first"; exit 1; }
+          test "$(npm view "$NAME@$PKG" mcpName)" = "$MCPNAME" || { echo "::error::published package lacks mcpName $MCPNAME"; exit 1; }
+
+      - name: Install mcp-publisher
+        run: |
+          curl -fsSL "https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher_$(uname -s | tr '[:upper:]' '[:lower:]')_$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/').tar.gz" | tar xz mcp-publisher
+          ./mcp-publisher --version
+
+      - name: Authenticate to MCP Registry
+        run: ./mcp-publisher login github-oidc
+
+      - name: Publish server to MCP Registry
+        run: ./mcp-publisher publish

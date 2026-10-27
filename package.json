@@ -25,7 +25,7 @@
     "analytics",
     "tagpilot"
   ],
-  "homepage": "https://tagpilot.io",
+  "homepage": "https://tagpilot.io/ga4-mcp",
   "scripts": {
     "build": "rm -rf dist && tsc -p tsconfig.json && chmod +x dist/index.js",
     "typecheck": "tsc -p tsconfig.test.json --noEmit",
@@ -46,5 +46,12 @@
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.72.1"
   },
-  "author": "Tag Concierge sp. z o.o. (https://tagpilot.io)"
+  "author": "Tag Concierge sp. z o.o. (https://tagpilot.io)",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tagpilot/ga4-mcp.git"
+  },
+  "bugs": {
+    "url": "https://github.com/tagpilot/ga4-mcp/issues"
+  }
 }

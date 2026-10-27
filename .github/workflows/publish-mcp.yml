@@ -34,13 +34,24 @@ jobs:
           npm view "$NAME@$PKG" version >/dev/null || { echo "::error::$NAME@$PKG is not on npm yet; publish it first"; exit 1; }
           test "$(npm view "$NAME@$PKG" mcpName)" = "$MCPNAME" || { echo "::error::published package lacks mcpName $MCPNAME"; exit 1; }
 
+      - name: Skip if this version is already in the registry
+        id: existing
+        run: |
+          NAME=$(jq -r .name server.json); VERSION=$(jq -r .version server.json)
+          FOUND=$(curl -fsS "https://registry.modelcontextprotocol.io/v0.1/servers?search=${NAME}" | jq --arg n "$NAME" --arg v "$VERSION" '[.servers[] | (.server // .) | select(.name == $n and .version == $v)] | length')
+          echo "found=$FOUND" >> "$GITHUB_OUTPUT"
+          [ "$FOUND" = "0" ] || echo "::notice::$NAME@$VERSION is already published; nothing to do."
+
       - name: Install mcp-publisher
+        if: steps.existing.outputs.found == '0'
         run: |
           curl -fsSL "https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher_$(uname -s | tr '[:upper:]' '[:lower:]')_$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/').tar.gz" | tar xz mcp-publisher
           ./mcp-publisher --version
 
       - name: Authenticate to MCP Registry
+        if: steps.existing.outputs.found == '0'
         run: ./mcp-publisher login github-oidc
 
       - name: Publish server to MCP Registry
+        if: steps.existing.outputs.found == '0'
         run: ./mcp-publisher publish

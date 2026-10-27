@@ -217,6 +217,7 @@ describe('broker auth flow', () => {
     [403, /ga4:mcp/],
     [503, /not available/],
     [429, /Retry in 7 s/],
+    [502, /could not reach Google/],
   ] as const) {
     test(`broker ${status} on /session gives a clear message`, async () => {
       broker = await startMockServer(() => ({ status, body: { error: 'x', message: 'nope' }, headers: { 'retry-after': '7' } })) as unknown as Broker;

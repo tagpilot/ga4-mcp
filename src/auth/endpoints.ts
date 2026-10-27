@@ -138,6 +138,8 @@ export class BrokerEndpoint implements AuthEndpoint {
         const retry = res.headers.get('retry-after');
         throw new Error(`Tag Pilot rate limit reached for this API key. Retry in ${retry ? `${retry} s` : 'a minute'}.`);
       }
+      case 502:
+        throw new Error('Tag Pilot could not reach Google to exchange the sign-in token. This is usually temporary; try again shortly.');
       case 503:
         throw new SetupError('Google sign-in for the GA4 MCP is not available on this Tag Pilot server right now. Please try again later.');
       default:

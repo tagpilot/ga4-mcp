@@ -12,7 +12,7 @@ const HELP = `@tagpilot/ga4-mcp ${VERSION}: read-only Google Analytics 4 MCP ser
 
 Usage:
   npx -y @tagpilot/ga4-mcp            Start the MCP server on stdio (what MCP clients run)
-  npx -y @tagpilot/ga4-mcp login      Sign in with Google now, in this terminal
+  npx -y @tagpilot/ga4-mcp login      Sign in with Google now: prints a link to open in any browser
   npx -y @tagpilot/ga4-mcp logout     Delete saved Google sign-ins (all of them, or only this key's
                                       when TAGPILOT_API_KEY is set)
   npx -y @tagpilot/ga4-mcp status     Show configuration and saved sign-ins
@@ -20,7 +20,6 @@ Usage:
 Environment:
   TAGPILOT_API_KEY     Required. Free key from the GA4 MCP page at https://app.tagpilot.io
   TAGPILOT_API_URL     Tag Pilot API base URL (default https://api.tagpilot.io)
-  GA4_MCP_OAUTH_PORT   Fixed local port for the Google sign-in callback (default: random)
   GA4_MCP_NO_BROWSER   Set to 1 to only print the sign-in URL instead of opening a browser
   GA4_MCP_BROWSER      Browser to open the sign-in with (app name on macOS, command elsewhere)
   GA4_MCP_AUTH_WAIT_SECONDS
@@ -43,17 +42,16 @@ async function main(argv: string[]): Promise<void> {
     return;
   }
   const config = loadConfig();
-  if (config.mode === 'dev') log('Development mode: using GA4_MCP_DEV_GOOGLE_CLIENT_ID/SECRET directly with Google (no Tag Pilot broker).');
 
   switch (command) {
     case 'serve': {
-      if (config.mode === 'broker' && !config.apiKey) log(MISSING_KEY_MESSAGE);
+      if (!config.apiKey) log(MISSING_KEY_MESSAGE);
       const server = createServer(createAccessTokenSource(config), {
         adminApiUrl: config.adminApiUrl,
         dataApiUrl: config.dataApiUrl,
       });
       await server.connect(new StdioServerTransport());
-      log(`ready (v${VERSION}, ${config.mode === 'dev' ? 'development mode' : config.apiUrl})`);
+      log(`ready (v${VERSION}, ${config.apiUrl})`);
       return;
     }
     case 'login': {
@@ -62,6 +60,7 @@ async function main(argv: string[]): Promise<void> {
         process.stderr.write(LOGIN_NEEDS_KEY + '\n');
         process.exit(1);
       }
+      process.stderr.write('Starting the Google sign-in. Open the link below in any browser, on any device; this waits until you approve.\n');
       await manager.getAccessToken(Number.POSITIVE_INFINITY);
       process.stderr.write(`Signed in. Token saved to ${manager.cacheFile}\n`);
       return;

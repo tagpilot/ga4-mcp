@@ -14,9 +14,9 @@ read-only: it can't change anything in GA4.
   and row limits small and follow `next_offset` only when needed; quotas are per property.
 - **Tracking health:** `check_duplicate_transactions` and `check_traffic_attribution` are quick
   audits of purchase deduplication and Unassigned / `(not set)` traffic.
-- **Sign-in:** the first call opens a browser for Google sign-in. If a tool says the sign-in is
-  pending, ask the user to finish it in the browser (or open the URL from the message), then
-  retry. If it says `TAGPILOT_API_KEY` is not set, tell the user to get a free key at
+- **Sign-in:** the first call opens a browser for Google sign-in. If a tool says "Finish signing
+  in with Google at <link>", show the user the link (it works in any browser, on any device), ask
+  them to approve, then retry. If it says `TAGPILOT_API_KEY` is not set, tell the user to get a free key at
   https://app.tagpilot.io/ga4-mcp and run `gemini extensions config tagpilot-ga4`.
 - Mention the property and date range you used, and any sampling or thresholding `notes` in the
   result.

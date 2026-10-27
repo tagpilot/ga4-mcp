@@ -2,7 +2,7 @@
   "manifest_version": "0.3",
   "name": "tagpilot-ga4-mcp",
   "display_name": "Tag Pilot GA4",
-  "version": "0.1.2",
+  "version": "0.2.0",
   "description": "Free, read-only Google Analytics 4: reports, funnels, realtime and tracking-health checks. Sign in with Google, no Google Cloud setup.",
   "long_description": "Ask Claude about your Google Analytics 4 data: reports, funnels, realtime, property setup, and Tag Pilot tracking-health checks (duplicate purchases, Unassigned and (not set) traffic).\n\n**No Google Cloud setup.** Paste your free Tag Pilot API key from [app.tagpilot.io/ga4-mcp](https://app.tagpilot.io/ga4-mcp), ask a GA4 question, and sign in with Google in the browser window that opens.\n\n**Read-only and private.** The only Google scope is `analytics.readonly`. Your GA4 data goes from your computer straight to Google; Tag Pilot only brokers the token exchange and stores no Google tokens. The refresh token stays on your computer in `~/.config/tagpilot/ga4-mcp`.",
   "author": {

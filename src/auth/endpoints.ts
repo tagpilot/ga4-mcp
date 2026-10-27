@@ -1,7 +1,6 @@
-// The two ways to get Google tokens:
-//   BrokerEndpoint: the Tag Pilot API holds the OAuth client secret (normal use, see api-contract.md).
-//   DirectGoogleEndpoint: your own Google "Desktop" OAuth client, for development only.
-import { APP_URL, GA4_SCOPE } from '../config.js';
+// Client for the Tag Pilot token broker (explorations/ga4-mcp/api-contract.md, v2: polling sign-in).
+// The broker holds the Google OAuth client secret; Google tokens are only passed through.
+import { APP_URL } from '../config.js';
 import { SetupError } from '../errors.js';
 import { USER_AGENT } from '../version.js';
 
@@ -13,6 +12,24 @@ export interface TokenResponse {
   refresh_token?: string;
 }
 
+export interface SignInSession {
+  sessionId: string;
+  authorizeUrl: string;
+  /** Seconds between result polls. */
+  pollInterval: number;
+  /** Seconds until the session expires. */
+  expiresIn: number;
+}
+
+export type PollResult =
+  | { status: 'pending' }
+  | { status: 'complete'; code: string }
+  | { status: 'error'; error: string }
+  /** Unknown, expired or already collected. */
+  | { status: 'not_found' }
+  /** Temporary trouble (network, rate limit, 5xx): poll again later. */
+  | { status: 'retry'; reason: string; afterSeconds?: number };
+
 /** Google's OAuth error (`{error, error_description}`), e.g. invalid_grant. */
 export class OAuthGrantError extends Error {
   override name = 'OAuthGrantError';
@@ -21,89 +38,100 @@ export class OAuthGrantError extends Error {
   }
 }
 
+/** A broker answer that isn't a success; `message` is already user-facing. */
+export class BrokerError extends Error {
+  override name = 'BrokerError';
+  constructor(message: string, readonly status: number, readonly retryAfter?: number) {
+    super(message);
+  }
+}
+
 export interface AuthEndpoint {
-  /** Human-readable description for status output. */
-  readonly label: string;
-  startSession(p: { port: number; codeChallenge: string; state: string }): Promise<{ authorizeUrl: string; expiresIn?: number }>;
-  exchangeCode(p: { code: string; codeVerifier: string; redirectUri: string }): Promise<TokenResponse>;
+  startSession(p: { codeChallenge: string }): Promise<SignInSession>;
+  pollResult(sessionId: string): Promise<PollResult>;
+  exchangeCode(p: { code: string; codeVerifier: string }): Promise<TokenResponse>;
   refresh(refreshToken: string): Promise<TokenResponse>;
 }
 
 type FetchFn = typeof fetch;
+type Json = Record<string, unknown>;
 
-async function readJson(res: Response): Promise<Record<string, unknown> | null> {
+async function readJson(res: Response): Promise<Json | null> {
   const text = await res.text();
   if (!text) return null;
   try {
     const parsed = JSON.parse(text) as unknown;
-    return parsed && typeof parsed === 'object' ? (parsed as Record<string, unknown>) : null;
+    return parsed && typeof parsed === 'object' ? (parsed as Json) : null;
   } catch {
     return null;
   }
 }
 
-function asTokenResponse(json: Record<string, unknown> | null, source: string): TokenResponse {
+function asTokenResponse(json: Json | null): TokenResponse {
   if (!json || typeof json.access_token !== 'string') {
-    throw new Error(`${source} returned a token response without an access_token`);
+    throw new Error('Tag Pilot returned a token response without an access_token');
   }
   return json as unknown as TokenResponse;
 }
 
-function grantError(json: Record<string, unknown> | null): OAuthGrantError | null {
-  if (json && typeof json.error === 'string') {
-    return new OAuthGrantError(json.error, typeof json.error_description === 'string' ? json.error_description : undefined);
-  }
-  return null;
-}
-
 export class BrokerEndpoint implements AuthEndpoint {
-  readonly label: string;
-
   constructor(
     private readonly apiUrl: string,
     private readonly apiKey: string,
     private readonly fetchImpl: FetchFn = fetch,
-  ) {
-    this.label = `Tag Pilot broker at ${apiUrl}`;
-  }
+  ) {}
 
-  async startSession(p: { port: number; codeChallenge: string; state: string }) {
-    const json = await this.post('/integrations/v1/ga4/oauth/session', {
-      redirect_port: p.port,
-      code_challenge: p.codeChallenge,
-      state: p.state,
-    });
-    if (!json || typeof json.authorize_url !== 'string') {
-      throw new Error('Tag Pilot returned no authorize_url');
+  async startSession(p: { codeChallenge: string }): Promise<SignInSession> {
+    const json = await this.post('/integrations/v1/ga4/oauth/session', { code_challenge: p.codeChallenge });
+    if (!json || typeof json.session_id !== 'string' || typeof json.authorize_url !== 'string') {
+      throw new Error('Tag Pilot returned an incomplete sign-in session');
     }
     return {
+      sessionId: json.session_id,
       authorizeUrl: json.authorize_url,
-      expiresIn: typeof json.expires_in === 'number' ? json.expires_in : undefined,
+      pollInterval: typeof json.poll_interval === 'number' && json.poll_interval > 0 ? json.poll_interval : 2,
+      expiresIn: typeof json.expires_in === 'number' && json.expires_in > 0 ? json.expires_in : 600,
     };
   }
 
+  async pollResult(sessionId: string): Promise<PollResult> {
+    let json: Json | null;
+    try {
+      json = await this.post(`/integrations/v1/ga4/oauth/session/${encodeURIComponent(sessionId)}/result`, {});
+    } catch (e) {
+      if (e instanceof BrokerError) {
+        if (e.status === 404) return { status: 'not_found' };
+        if (e.status === 429 || e.status >= 500) return { status: 'retry', reason: e.message, afterSeconds: e.retryAfter };
+      }
+      if (e instanceof BrokerError || e instanceof SetupError) throw e;
+      return { status: 'retry', reason: (e as Error).message }; // network
+    }
+    switch (json?.status) {
+      case 'pending':
+        return { status: 'pending' };
+      case 'complete':
+        if (typeof json.code === 'string' && json.code) return { status: 'complete', code: json.code };
+        break;
+      case 'error':
+        return { status: 'error', error: typeof json.error === 'string' ? json.error : 'unknown_error' };
+    }
+    throw new Error('Tag Pilot returned an unexpected sign-in status');
+  }
+
   async exchangeCode(p: { code: string; codeVerifier: string }) {
-    const json = await this.post('/integrations/v1/ga4/oauth/token', {
-      grant_type: 'authorization_code',
-      code: p.code,
-      code_verifier: p.codeVerifier,
-    });
-    return asTokenResponse(json, 'Tag Pilot');
+    return asTokenResponse(
+      await this.post('/integrations/v1/ga4/oauth/token', { grant_type: 'authorization_code', code: p.code, code_verifier: p.codeVerifier }),
+    );
   }
 
   async refresh(refreshToken: string) {
-    const json = await this.post('/integrations/v1/ga4/oauth/token', {
-      grant_type: 'refresh_token',
-      refresh_token: refreshToken,
-    });
-    return asTokenResponse(json, 'Tag Pilot');
+    return asTokenResponse(await this.post('/integrations/v1/ga4/oauth/token', { grant_type: 'refresh_token', refresh_token: refreshToken }));
   }
 
-  private async post(path: string, body: Record<string, unknown>): Promise<Record<string, unknown> | null> {
-    const url = `${this.apiUrl}${path}`;
+  private async post(path: string, body: Json): Promise<Json | null> {
     let res: Response;
     try {
-      res = await this.fetchImpl(url, {
+      res = await this.fetchImpl(`${this.apiUrl}${path}`, {
         method: 'POST',
         headers: {
           authorization: `Bearer ${this.apiKey}`,
@@ -120,12 +148,13 @@ export class BrokerEndpoint implements AuthEndpoint {
     if (res.ok) return json;
 
     const message = json && typeof json.message === 'string' ? json.message : undefined;
+    const error = json && typeof json.error === 'string' ? json.error : undefined;
     switch (res.status) {
-      case 400: {
-        const grant = grantError(json);
-        if (grant && grant.error !== 'invalid_request') throw grant;
-        throw new Error(`Tag Pilot rejected the request: ${message ?? grant?.description ?? 'invalid request'}`);
-      }
+      case 400:
+        if (error && error !== 'invalid_request') {
+          throw new OAuthGrantError(error, typeof json?.error_description === 'string' ? json.error_description : undefined);
+        }
+        throw new BrokerError(`Tag Pilot rejected the request: ${message ?? 'invalid request'}`, 400);
       case 401:
         throw new SetupError(
           `Tag Pilot rejected TAGPILOT_API_KEY (invalid or revoked). Create a new key on the GA4 MCP page at ${APP_URL} and update this server's env.`,
@@ -134,73 +163,18 @@ export class BrokerEndpoint implements AuthEndpoint {
         throw new SetupError(
           `TAGPILOT_API_KEY does not have the "ga4:mcp" scope. Create a key on the GA4 MCP page at ${APP_URL} (it gets the right scope) and update this server's env.`,
         );
+      case 404:
+        throw new BrokerError('Not found', 404);
       case 429: {
-        const retry = res.headers.get('retry-after');
-        throw new Error(`Tag Pilot rate limit reached for this API key. Retry in ${retry ? `${retry} s` : 'a minute'}.`);
+        const retry = Number(res.headers.get('retry-after')) || undefined;
+        throw new BrokerError(`Tag Pilot rate limit reached for this API key. Retry in ${retry ? `${retry} s` : 'a minute'}.`, 429, retry);
       }
       case 502:
-        throw new Error('Tag Pilot could not reach Google to exchange the sign-in token. This is usually temporary; try again shortly.');
+        throw new BrokerError('Tag Pilot could not reach Google to exchange the sign-in token. This is usually temporary; try again shortly.', 502);
       case 503:
-        throw new SetupError('Google sign-in for the GA4 MCP is not available on this Tag Pilot server right now. Please try again later.');
+        throw new BrokerError('Google sign-in for the GA4 MCP is not available on this Tag Pilot server right now. Please try again later.', 503);
       default:
-        throw new Error(`Tag Pilot returned HTTP ${res.status}${message ? `: ${message}` : ''}. Please try again later.`);
+        throw new BrokerError(`Tag Pilot returned HTTP ${res.status}${message ? `: ${message}` : ''}. Please try again later.`, res.status);
     }
-  }
-}
-
-export const GOOGLE_AUTH_URL = 'https://accounts.google.com/o/oauth2/v2/auth';
-export const GOOGLE_TOKEN_URL = 'https://oauth2.googleapis.com/token';
-
-/** Development only: your own Google Cloud "Desktop app" OAuth client, no Tag Pilot involved. */
-export class DirectGoogleEndpoint implements AuthEndpoint {
-  readonly label = 'Google directly (development mode, your own OAuth client)';
-
-  constructor(
-    private readonly clientId: string,
-    private readonly clientSecret: string,
-    private readonly fetchImpl: FetchFn = fetch,
-    private readonly authUrl = GOOGLE_AUTH_URL,
-    private readonly tokenUrl = GOOGLE_TOKEN_URL,
-  ) {}
-
-  async startSession(p: { port: number; codeChallenge: string; state: string }) {
-    const url = new URL(this.authUrl);
-    url.search = new URLSearchParams({
-      client_id: this.clientId,
-      redirect_uri: `http://127.0.0.1:${p.port}/callback`,
-      response_type: 'code',
-      scope: GA4_SCOPE,
-      access_type: 'offline',
-      prompt: 'consent',
-      include_granted_scopes: 'false',
-      code_challenge: p.codeChallenge,
-      code_challenge_method: 'S256',
-      state: p.state,
-    }).toString();
-    return { authorizeUrl: url.toString(), expiresIn: 600 };
-  }
-
-  exchangeCode(p: { code: string; codeVerifier: string; redirectUri: string }) {
-    return this.post({
-      grant_type: 'authorization_code',
-      code: p.code,
-      code_verifier: p.codeVerifier,
-      redirect_uri: p.redirectUri,
-    });
-  }
-
-  refresh(refreshToken: string) {
-    return this.post({ grant_type: 'refresh_token', refresh_token: refreshToken });
-  }
-
-  private async post(params: Record<string, string>): Promise<TokenResponse> {
-    const res = await this.fetchImpl(this.tokenUrl, {
-      method: 'POST',
-      headers: { 'content-type': 'application/x-www-form-urlencoded', accept: 'application/json', 'user-agent': USER_AGENT },
-      body: new URLSearchParams({ ...params, client_id: this.clientId, client_secret: this.clientSecret }).toString(),
-    });
-    const json = await readJson(res);
-    if (res.ok) return asTokenResponse(json, 'Google');
-    throw grantError(json) ?? new Error(`Google token endpoint returned HTTP ${res.status}`);
   }
 }

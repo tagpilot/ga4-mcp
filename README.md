@@ -99,22 +99,29 @@ Other clients (Windsurf, Zed, …) take the same `command`, `args` and `env`.
 ## How sign-in works, and what Tag Pilot sees
 
 ```
-your machine                                  Tag Pilot API                Google
-─────────────────────────────────────────    ─────────────────────        ─────────────────
-ga4-mcp starts a listener on 127.0.0.1  ──►  POST …/ga4/oauth/session
-(PKCE verifier stays on your machine)        returns a Google sign-in URL
-browser: Google consent (read-only)   ─────────────────────────────────►  accounts.google.com
-                                     ◄──── 302 to 127.0.0.1/callback ◄──  (via api.tagpilot.io)
-ga4-mcp exchanges the code             ──►  POST …/ga4/oauth/token  ──►   oauth2.googleapis.com
+your machine                              Tag Pilot API                     Google
+──────────────────────────────────────   ──────────────────────────        ──────────────────────
+ga4-mcp makes a PKCE verifier       ──►  POST …/ga4/oauth/session
+(it never leaves your machine)           returns a Google sign-in link
+any browser, any device: Google consent (read-only) ─────────────────►  accounts.google.com
+                                         …/ga4/oauth/callback  ◄──────  one-time code
+ga4-mcp polls for the result        ──►  POST …/session/{id}/result
+ga4-mcp exchanges the code + verifier ►  POST …/ga4/oauth/token  ──►    oauth2.googleapis.com
 token saved in ~/.config/tagpilot/ga4-mcp (mode 600)
-GA4 API calls  ───────────────────────────────────────────────────────►  analytics*.googleapis.com
+GA4 API calls  ─────────────────────────────────────────────────────►  analytics*.googleapis.com
 ```
+
+**Sign-in works from any browser**, like `npm login`: nothing listens on your machine, so it also
+works over SSH, in containers, in WSL or on a remote dev box. Open the link wherever you have a
+browser (even your phone) and approve; the server notices within a couple of seconds.
 
 - **Your GA4 data goes from your machine straight to Google.** Reports, property settings and
   everything else the tools read never pass through Tag Pilot.
 - **Tag Pilot only brokers the token exchange.** Its API adds Tag Pilot's Google OAuth client
   credentials to Google's token endpoint and returns Google's answer. It **stores no Google
-  tokens** and never logs them; it records only that an exchange happened and for which API key
+  tokens** and never logs them. The only thing it holds is the one-time sign-in code from the
+  Google callback, for at most 10 minutes until your machine collects it; that code is useless
+  without the PKCE verifier that stays on your machine. It it records only that an exchange happened and for which API key
   (the "last used" time on your GA4 MCP page).
 - **Read-only.** The only Google scope requested is `analytics.readonly`. None of the tools can
   change anything in GA4.
@@ -188,12 +195,12 @@ same GA4 quota as the equivalent reports (3–4 report calls).
 the GA4 MCP page at [app.tagpilot.io](https://app.tagpilot.io). Keys made elsewhere in the app have
 other scopes.
 
-**"Waiting for you to sign in with Google"**: finish the sign-in in the browser window that opened
-(or open the URL from the message), then repeat the request. The sign-in link is valid for 10
-minutes. No browser opened? Over SSH or in a container, run the sign-in in a terminal on the same
-machine with `npx -y @tagpilot/ga4-mcp login` (with the same `TAGPILOT_API_KEY`). If the browser
-runs on another machine, set a fixed port with `GA4_MCP_OAUTH_PORT=53682` and forward it
-(`ssh -L 53682:127.0.0.1:53682 host`).
+**"Finish signing in with Google at …, then ask again"**: open the link in any browser (it
+doesn't have to be on this machine), approve read-only access, then repeat the request. The
+server keeps checking in the background, so you don't need to restart anything. The link is
+valid for 10 minutes; after that, ask again to get a new one. To sign in from a terminal instead
+(e.g. over SSH), run `TAGPILOT_API_KEY=tpk_… npx -y @tagpilot/ga4-mcp login`: it prints the link
+and waits until you approve.
 
 **"Your Google sign-in for GA4 expired or was revoked"**: the saved token was removed. Call any
 tool again and sign in again. Google expires refresh tokens after 6 months without use or when you
@@ -223,10 +230,9 @@ Claude Code see `claude --debug` or `/mcp`.
 |---|---|
 | `TAGPILOT_API_KEY` | **Required** for the server and `login` (set it in your MCP client's config). Your `tpk_…` key from the GA4 MCP page. |
 | `TAGPILOT_API_URL` | Tag Pilot API base URL. Default `https://api.tagpilot.io`. |
-| `GA4_MCP_OAUTH_PORT` | Fixed local port for the sign-in callback (1024–65535). Default: random. |
-| `GA4_MCP_NO_BROWSER` | `1` to only print/return the sign-in URL. |
+| `GA4_MCP_NO_BROWSER` | `1` to only print/return the sign-in link instead of opening a browser. |
 | `GA4_MCP_BROWSER` | Browser to open (macOS app name, or a command on Linux/Windows). |
-| `GA4_MCP_AUTH_WAIT_SECONDS` | How long a tool call waits for the browser sign-in before returning "finish signing in". Default 45 (MCP clients often time out at 60 s). |
+| `GA4_MCP_AUTH_WAIT_SECONDS` | How long a tool call waits for the sign-in before returning "finish signing in" with the link (sign-in keeps going in the background). Default 45 (MCP clients often time out at 60 s). |
 | `GA4_MCP_CONFIG_DIR` | Token directory. Default `~/.config/tagpilot/ga4-mcp`. |
 
 Commands: `npx -y @tagpilot/ga4-mcp [serve|login|logout|status|--help|--version]`. Without a
@@ -252,16 +258,9 @@ steps are in the Tag Pilot repo, `explorations/ga4-mcp/distribution.md`.
 The broker contract with the Tag Pilot API is in the Tag Pilot repo,
 `explorations/ga4-mcp/api-contract.md`.
 
-**Development mode (no broker).** To work without the Tag Pilot API, use your own Google Cloud
-**Desktop app** OAuth client (with the Google Analytics Admin API and Data API enabled):
-
-```bash
-GA4_MCP_DEV_GOOGLE_CLIENT_ID=… GA4_MCP_DEV_GOOGLE_CLIENT_SECRET=… node dist/index.js login
-```
-
-Then the server talks to Google directly and doesn't need `TAGPILOT_API_KEY`. It's for development
-only and not a supported way to run the published package. `GA4_MCP_ADMIN_API_URL` and
-`GA4_MCP_DATA_API_URL` point the API calls at a mock (used by `npm run e2e`).
+For local testing, point `TAGPILOT_API_URL` at a local or beta tc-api (`http://localhost:8000`,
+`https://beta-api.tagpilot.io`). `GA4_MCP_ADMIN_API_URL` and `GA4_MCP_DATA_API_URL` point the GA4
+calls at a mock (used by `npm run e2e`).
 
 ## License
 

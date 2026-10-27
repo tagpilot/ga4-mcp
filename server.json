@@ -17,13 +17,13 @@
     "url": "https://github.com/tagpilot/ga4-mcp",
     "source": "github"
   },
-  "version": "0.1.2",
+  "version": "0.2.0",
   "packages": [
     {
       "registryType": "npm",
       "registryBaseUrl": "https://registry.npmjs.org",
       "identifier": "@tagpilot/ga4-mcp",
-      "version": "0.1.2",
+      "version": "0.2.0",
       "runtimeHint": "npx",
       "transport": {
         "type": "stdio"
@@ -38,13 +38,8 @@
           "placeholder": "tpk_..."
         },
         {
-          "name": "GA4_MCP_OAUTH_PORT",
-          "description": "Fixed local port (1024-65535) for the Google sign-in callback, e.g. for SSH port forwarding. Default: random.",
-          "format": "number"
-        },
-        {
           "name": "GA4_MCP_NO_BROWSER",
-          "description": "Set to 1 to only return the Google sign-in URL instead of opening a browser.",
+          "description": "Set to 1 to only return the Google sign-in link (open it in any browser) instead of opening a browser.",
           "format": "string"
         },
         {

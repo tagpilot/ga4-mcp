@@ -39,15 +39,12 @@ export function logout(config: Config, keyCacheFile: string | null): string[] {
 }
 
 export function status(config: Config, keyCacheFile: string | null, now = Date.now()): string[] {
-  const lines = [`version: ${VERSION}`, `mode: ${config.mode}`];
-  if (config.mode === 'broker') {
-    lines.push(`api url: ${config.apiUrl}`);
-    lines.push(
-      config.apiKey
-        ? `api key: set (${config.apiKey.slice(0, 8)}…)`
-        : 'api key: not set in this shell (normal: your MCP client passes it to the server; set TAGPILOT_API_KEY to check one key)',
-    );
-  }
+  const lines = [`version: ${VERSION}`, `api url: ${config.apiUrl}`];
+  lines.push(
+    config.apiKey
+      ? `api key: set (${config.apiKey.slice(0, 8)}…)`
+      : 'api key: not set in this shell (normal: your MCP client passes it to the server; set TAGPILOT_API_KEY to check one key)',
+  );
   if (keyCacheFile) {
     lines.push(`token file: ${keyCacheFile}`);
     lines.push(`google: ${describeToken(new TokenCache(keyCacheFile).read(), now)}`);

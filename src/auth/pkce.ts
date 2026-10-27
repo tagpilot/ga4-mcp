@@ -7,7 +7,3 @@ export function createPkce(): { verifier: string; challenge: string } {
   const challenge = b64url(crypto.createHash('sha256').update(verifier).digest());
   return { verifier, challenge };
 }
-
-export function createState(): string {
-  return b64url(crypto.randomBytes(24)); // 32 url-safe chars
-}

@@ -1,6 +1,6 @@
 {
   "name": "@tagpilot/ga4-mcp",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Free, read-only Google Analytics 4 MCP server by Tag Pilot. Zero Google Cloud setup: sign in with Google in your browser, query GA4 from Claude, Cursor and other MCP clients.",
   "license": "Apache-2.0",
   "type": "module",

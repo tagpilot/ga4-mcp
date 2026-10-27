@@ -85,7 +85,7 @@ GA4 API calls  ─────────────────────�
 - **The refresh token stays on your machine**, in `~/.config/tagpilot/ga4-mcp/<id>.json`
   (readable only by you). Access tokens are refreshed through Tag Pilot about once an hour.
 - **Revoking:** delete the key on app.tagpilot.io to stop refreshes, run
-  `npx -y @tagpilot/ga4-mcp logout` to delete the local token, and remove the app's access at
+  `npx -y @tagpilot/ga4-mcp logout` to delete the local tokens, and remove the app's access at
   [myaccount.google.com/permissions](https://myaccount.google.com/permissions).
 
 ## Tools
@@ -140,7 +140,7 @@ measurement IDs.
 
 They're opinionated rules of thumb built from a few `run_report` calls, and each result shows what
 it measured. For example, `check_duplicate_transactions` counts `purchase` events grouped by
-`transactionId`, and `check_traffic_attribution` flags Unassigned traffic above 5%. They cost the
+`transactionId`, and `check_traffic_attribution` flags Unassigned traffic at 5% or more. They cost the
 same GA4 quota as the equivalent reports (3–4 report calls).
 
 ## Troubleshooting
@@ -160,8 +160,8 @@ runs on another machine, set a fixed port with `GA4_MCP_OAUTH_PORT=53682` and fo
 (`ssh -L 53682:127.0.0.1:53682 host`).
 
 **"Your Google sign-in for GA4 expired or was revoked"**: the saved token was removed. Call any
-tool again and sign in again. Google expires refresh tokens after 6 months without use, when you
-revoke access, or when you change your password.
+tool again and sign in again. Google expires refresh tokens after 6 months without use or when you
+revoke access, and may also expire them after a password change.
 
 **"The signed-in Google account has no access to property …"**: that Google account needs at
 least the Viewer role on the GA4 property. Use `get_account_summaries` to see what it can read. To
@@ -174,15 +174,18 @@ use a different Google account, run `npx -y @tagpilot/ga4-mcp logout` and sign i
 date ranges, fewer dimensions or lower limits, and pass `return_property_quota: true` to see what's
 left.
 
-**Check the setup**: `npx -y @tagpilot/ga4-mcp status` shows the API URL, whether a key is set,
-the token file and whether you're signed in. Logs go to stderr (stdout is the MCP channel); in
+**Check the setup**: `npx -y @tagpilot/ga4-mcp status` shows the API URL and every saved Google
+sign-in on this machine. Your key normally lives only in your MCP client's config, so `status` and
+`logout` don't need it. Add `TAGPILOT_API_KEY=tpk_…` in front to check or log out one key only.
+`login` does need the key (`TAGPILOT_API_KEY=tpk_… npx -y @tagpilot/ga4-mcp login`), but you
+rarely need it: the first GA4 question in your AI tool opens the sign-in. Logs go to stderr (stdout is the MCP channel); in
 Claude Code see `claude --debug` or `/mcp`.
 
 ## Configuration
 
 | Variable | |
 |---|---|
-| `TAGPILOT_API_KEY` | **Required.** Your `tpk_…` key from the GA4 MCP page. |
+| `TAGPILOT_API_KEY` | **Required** for the server and `login` (set it in your MCP client's config). Your `tpk_…` key from the GA4 MCP page. |
 | `TAGPILOT_API_URL` | Tag Pilot API base URL. Default `https://api.tagpilot.io`. |
 | `GA4_MCP_OAUTH_PORT` | Fixed local port for the sign-in callback (1024–65535). Default: random. |
 | `GA4_MCP_NO_BROWSER` | `1` to only print/return the sign-in URL. |
@@ -191,7 +194,9 @@ Claude Code see `claude --debug` or `/mcp`.
 | `GA4_MCP_CONFIG_DIR` | Token directory. Default `~/.config/tagpilot/ga4-mcp`. |
 
 Commands: `npx -y @tagpilot/ga4-mcp [serve|login|logout|status|--help|--version]`. Without a
-command it runs the MCP server on stdio.
+command it runs the MCP server on stdio. `logout` without a key removes every saved sign-in;
+with `TAGPILOT_API_KEY` set, only that key's. Each key has its own token file, so after switching
+keys the old key's sign-in stays until you run `logout` without a key.
 
 ## Development
 

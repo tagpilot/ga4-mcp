@@ -1,0 +1,59 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.tagpilot/ga4-mcp",
+  "title": "Tag Pilot GA4",
+  "description": "Free, read-only Google Analytics 4: reports, funnels, realtime. Sign in with Google, no GCP setup.",
+  "websiteUrl": "https://tagpilot.io/ga4-mcp",
+  "icons": [
+    {
+      "src": "https://tagpilot.io/favicon.png",
+      "mimeType": "image/png",
+      "sizes": [
+        "256x256"
+      ]
+    }
+  ],
+  "repository": {
+    "url": "https://github.com/tagpilot/ga4-mcp",
+    "source": "github"
+  },
+  "version": "0.1.2",
+  "packages": [
+    {
+      "registryType": "npm",
+      "registryBaseUrl": "https://registry.npmjs.org",
+      "identifier": "@tagpilot/ga4-mcp",
+      "version": "0.1.2",
+      "runtimeHint": "npx",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
+        {
+          "name": "TAGPILOT_API_KEY",
+          "description": "Free Tag Pilot API key (tpk_…) from the GA4 MCP page at https://app.tagpilot.io/ga4-mcp",
+          "isRequired": true,
+          "isSecret": true,
+          "format": "string",
+          "placeholder": "tpk_..."
+        },
+        {
+          "name": "GA4_MCP_OAUTH_PORT",
+          "description": "Fixed local port (1024-65535) for the Google sign-in callback, e.g. for SSH port forwarding. Default: random.",
+          "format": "number"
+        },
+        {
+          "name": "GA4_MCP_NO_BROWSER",
+          "description": "Set to 1 to only return the Google sign-in URL instead of opening a browser.",
+          "format": "string"
+        },
+        {
+          "name": "GA4_MCP_AUTH_WAIT_SECONDS",
+          "description": "How long a tool call waits for the browser sign-in before returning the link.",
+          "format": "number",
+          "default": "45"
+        }
+      ]
+    }
+  ]
+}

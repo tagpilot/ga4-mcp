@@ -1,6 +1,7 @@
 // End-to-end smoke test of the BUILT server (dist/index.js) over stdio, the way an MCP client runs it:
 // a mock tc-api broker + mock Google APIs on one local HTTP server, a throwaway token directory, and
 // a fake "browser" that follows the sign-in URL. Run: npm run build && npm run e2e
+// Optional argument: another entry point to test, e.g. the unpacked .mcpb's server/index.js.
 import http from 'node:http';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -72,7 +73,7 @@ const configDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ga4-mcp-e2e-'));
 
 const transport = new StdioClientTransport({
   command: process.execPath,
-  args: [path.join(root, 'dist/index.js')],
+  args: [path.resolve(process.argv[2] ?? path.join(root, 'dist/index.js'))],
   env: {
     PATH: process.env.PATH,
     HOME: process.env.HOME,

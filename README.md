@@ -14,11 +14,48 @@ claude mcp add ga4 --env TAGPILOT_API_KEY=tpk_... -- npx -y @tagpilot/ga4-mcp
 ## Get started
 
 1. **Get a free API key.** Sign up at [app.tagpilot.io](https://app.tagpilot.io) and open the
-   **GA4 MCP** page. It creates a key (`tpk_…`) and shows the install snippet.
-2. **Add the server** to your MCP client (below). It needs Node.js 18 or newer.
+   [**GA4 MCP**](https://app.tagpilot.io/ga4-mcp) page. It creates a key (`tpk_…`) and, right
+   after that, shows install buttons and snippets with the key filled in.
+2. **Install** in your AI client (below).
 3. **Ask something**, e.g. *"Which GA4 properties do I have?"* On the first call a browser window
    opens. Sign in with the Google account that can see your GA4 properties and approve
    *"See and download your Google Analytics data"*. Then ask again.
+
+## Install
+
+| Client | How |
+|---|---|
+| Claude Desktop | [Download the extension](https://github.com/tagpilot/ga4-mcp/releases/latest/download/tagpilot-ga4-mcp.mcpb) and open it (no Node.js needed) |
+| Claude Code | `claude mcp add ga4 --env TAGPILOT_API_KEY=tpk_... -- npx -y @tagpilot/ga4-mcp` |
+| Cursor | **Add to Cursor** button on [app.tagpilot.io/ga4-mcp](https://app.tagpilot.io/ga4-mcp), or `mcp.json` below |
+| VS Code | **Install in VS Code** button on [app.tagpilot.io/ga4-mcp](https://app.tagpilot.io/ga4-mcp) or [tagpilot.io/ga4-mcp](https://tagpilot.io/ga4-mcp) |
+| Gemini CLI | `gemini extensions install https://github.com/tagpilot/ga4-mcp` |
+| Anything else | `npx -y @tagpilot/ga4-mcp` with `TAGPILOT_API_KEY` in its environment |
+
+Everything except the Claude Desktop extension runs the npm package with `npx`, so it needs
+Node.js 18 or newer. The server is also listed in the
+[MCP Registry](https://registry.modelcontextprotocol.io) as `io.github.tagpilot/ga4-mcp`.
+
+### Claude Desktop
+
+Download [`tagpilot-ga4-mcp.mcpb`](https://github.com/tagpilot/ga4-mcp/releases/latest/download/tagpilot-ga4-mcp.mcpb)
+and double-click it (or drag it into Settings → Extensions). Click **Install**, paste your
+`tpk_…` key, and enable it. The extension bundles the server and runs on Claude Desktop's
+built-in Node.js.
+
+Prefer the config file? In `claude_desktop_config.json` (Settings → Developer → Edit Config):
+
+```json
+{
+  "mcpServers": {
+    "ga4": {
+      "command": "npx",
+      "args": ["-y", "@tagpilot/ga4-mcp"],
+      "env": { "TAGPILOT_API_KEY": "tpk_..." }
+    }
+  }
+}
+```
 
 ### Claude Code
 
@@ -26,25 +63,10 @@ claude mcp add ga4 --env TAGPILOT_API_KEY=tpk_... -- npx -y @tagpilot/ga4-mcp
 claude mcp add ga4 --env TAGPILOT_API_KEY=tpk_... -- npx -y @tagpilot/ga4-mcp
 ```
 
-### Claude Desktop
-
-In `claude_desktop_config.json` (Settings → Developer → Edit Config):
-
-```json
-{
-  "mcpServers": {
-    "ga4": {
-      "command": "npx",
-      "args": ["-y", "@tagpilot/ga4-mcp"],
-      "env": { "TAGPILOT_API_KEY": "tpk_..." }
-    }
-  }
-}
-```
-
 ### Cursor
 
-In `~/.cursor/mcp.json` (or `.cursor/mcp.json` in a project):
+Use the **Add to Cursor** button on the GA4 MCP page, or add to `~/.cursor/mcp.json` (or
+`.cursor/mcp.json` in a project):
 
 ```json
 {
@@ -58,7 +80,21 @@ In `~/.cursor/mcp.json` (or `.cursor/mcp.json` in a project):
 }
 ```
 
-Other clients (VS Code, Windsurf, Zed, …) take the same `command`, `args` and `env`.
+### VS Code
+
+Use the **Install in VS Code** button, or run **MCP: Add Server** → *Command (stdio)* with
+`npx -y @tagpilot/ga4-mcp` and set `TAGPILOT_API_KEY` in the server's `env` in `mcp.json`.
+
+### Gemini CLI
+
+```bash
+gemini extensions install https://github.com/tagpilot/ga4-mcp
+```
+
+It asks for your Tag Pilot API key (stored in your system keychain). Change it later with
+`gemini extensions config tagpilot-ga4`.
+
+Other clients (Windsurf, Zed, …) take the same `command`, `args` and `env`.
 
 ## How sign-in works, and what Tag Pilot sees
 
@@ -205,7 +241,13 @@ npm install
 npm run check      # typecheck + lint + unit tests
 npm run build      # → dist/
 npm run e2e        # built server over stdio against a mock broker and mock Google
+npm run mcpb       # Claude Desktop extension → tagpilot-ga4-mcp-<version>.mcpb (+ tagpilot-ga4-mcp.mcpb)
+npm run mcpb:smoke # unpack the bundle, check its tools, run the e2e against it
 ```
+
+The version lives in `package.json`, `src/version.ts`, `server.json` (MCP Registry),
+`gemini-extension.json` and `mcpb/manifest.json`; `npm test` fails if they drift apart. Release
+steps are in the Tag Pilot repo, `explorations/ga4-mcp/distribution.md`.
 
 The broker contract with the Tag Pilot API is in the Tag Pilot repo,
 `explorations/ga4-mcp/api-contract.md`.

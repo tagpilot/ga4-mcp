@@ -1,0 +1,61 @@
+{
+  "manifest_version": "0.3",
+  "name": "tagpilot-ga4-mcp",
+  "display_name": "Tag Pilot GA4",
+  "version": "0.1.2",
+  "description": "Free, read-only Google Analytics 4: reports, funnels, realtime and tracking-health checks. Sign in with Google, no Google Cloud setup.",
+  "long_description": "Ask Claude about your Google Analytics 4 data: reports, funnels, realtime, property setup, and Tag Pilot tracking-health checks (duplicate purchases, Unassigned and (not set) traffic).\n\n**No Google Cloud setup.** Paste your free Tag Pilot API key from [app.tagpilot.io/ga4-mcp](https://app.tagpilot.io/ga4-mcp), ask a GA4 question, and sign in with Google in the browser window that opens.\n\n**Read-only and private.** The only Google scope is `analytics.readonly`. Your GA4 data goes from your computer straight to Google; Tag Pilot only brokers the token exchange and stores no Google tokens. The refresh token stays on your computer in `~/.config/tagpilot/ga4-mcp`.",
+  "author": {
+    "name": "Tag Pilot (Tag Concierge sp. z o.o.)",
+    "url": "https://tagpilot.io"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tagpilot/ga4-mcp.git"
+  },
+  "homepage": "https://tagpilot.io/ga4-mcp",
+  "documentation": "https://github.com/tagpilot/ga4-mcp#readme",
+  "support": "https://github.com/tagpilot/ga4-mcp/issues",
+  "icon": "icon.png",
+  "server": {
+    "type": "node",
+    "entry_point": "server/index.js",
+    "mcp_config": {
+      "command": "node",
+      "args": ["${__dirname}/server/index.js"],
+      "env": {
+        "TAGPILOT_API_KEY": "${user_config.api_key}"
+      }
+    }
+  },
+  "tools": [
+    { "name": "get_account_summaries", "description": "All GA4 accounts and properties you can read, with property IDs." },
+    { "name": "get_property_details", "description": "Time zone, currency, industry, standard/360, and data streams with measurement IDs." },
+    { "name": "list_google_ads_links", "description": "Linked Google Ads accounts." },
+    { "name": "list_property_annotations", "description": "Reporting annotations (releases, tracking changes, campaigns)." },
+    { "name": "get_custom_dimensions_and_metrics", "description": "Custom dimensions and metrics with API names; optionally the standard ones." },
+    { "name": "run_report", "description": "GA4 Data API report: dimensions, metrics, date ranges, filters, ordering, paging, totals." },
+    { "name": "run_realtime_report", "description": "The last 30 minutes of activity (60 on GA4 360)." },
+    { "name": "run_funnel_report", "description": "Funnels from event steps, open or closed, with breakdowns and next actions." },
+    { "name": "check_duplicate_transactions", "description": "Tag Pilot check: duplicate purchase events per transaction_id." },
+    { "name": "check_traffic_attribution", "description": "Tag Pilot check: Unassigned, (not set) and Direct traffic shares with likely causes." }
+  ],
+  "keywords": ["google analytics", "ga4", "analytics", "reports", "tracking", "tagpilot"],
+  "license": "Apache-2.0",
+  "privacy_policies": ["https://tagpilot.io/privacy-policy#google-user-data"],
+  "compatibility": {
+    "platforms": ["darwin", "win32", "linux"],
+    "runtimes": {
+      "node": ">=18.0.0"
+    }
+  },
+  "user_config": {
+    "api_key": {
+      "type": "string",
+      "title": "Tag Pilot API key",
+      "description": "Free key (tpk_…) from the GA4 MCP page at https://app.tagpilot.io/ga4-mcp",
+      "sensitive": true,
+      "required": true
+    }
+  }
+}

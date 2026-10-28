@@ -93,16 +93,21 @@ console.log(`tools (${tools.length}):`, tools.map((t) => t.name).join(', '));
 
 const first = await client.callTool({ name: 'list_sites', arguments: {} });
 assert.equal(first.isError, true);
-assert.match(text(first), /^Connect at \S+ \(code GSCX-2345\), then ask again\./);
+assert.match(text(first), /^Not connected yet\./);
+assert.match(text(first), /\[Connect Tag Pilot Search Console MCP\]\(\S+\)\nCode: \*\*GSCX-2345\*\*/);
 assert.equal(d1.product, 'gsc', 'D1 names the product');
 assert.equal(d1.client.name, 'E2E Client');
-assert.match(stderr, /Connect Tag Pilot Search Console MCP/);
-await fetch(text(first).match(/https?:\/\/\S+/)[0]);
+assert.match(stderr, /\[search-console-mcp\] Tag Pilot - Search Console MCP: connect this computer/, 'own log prefix, plain text');
+assert.doesNotMatch(stderr, /\[ga4-mcp\]/);
+await fetch(text(first).match(/\]\((https?:\/\/[^)\s]+)\)/)[1]);
 const deviceJson = path.join(configDir, 'device.json');
 for (let i = 0; i < 100 && !fs.existsSync(deviceJson); i++) await new Promise((r) => setTimeout(r, 100));
 assert.equal(fs.statSync(deviceJson).mode & 0o777, 0o600);
 assert.equal(JSON.parse(fs.readFileSync(deviceJson, 'utf8')).api_key, DEVICE_KEY);
 console.log('device connect (product gsc) → device.json ✓');
+const status = text(await client.callTool({ name: 'connection_status', arguments: {} }));
+assert.match(status, /^connected: Tag Pilot Search Console MCP is connected as device 'Search Console MCP · E2E Client on /);
+console.log('connection_status →', status);
 
 const sites = await client.callTool({ name: 'list_sites', arguments: {} });
 console.log('list_sites →', text(sites));

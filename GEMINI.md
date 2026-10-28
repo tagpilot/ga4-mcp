@@ -14,9 +14,11 @@ read-only: it can't change anything in GA4.
   and row limits small and follow `next_offset` only when needed; quotas are per property.
 - **Tracking health:** `check_duplicate_transactions` and `check_traffic_attribution` are quick
   audits of purchase deduplication and Unassigned / `(not set)` traffic.
-- **Connecting:** no API key is needed. The first call opens a browser to connect this computer.
-  If a tool says "Connect at <link> (code XXXX-XXXX)", show the user the link and code (any
-  browser, any device): they sign in to (or create) a free Tag Pilot account, check the code,
-  approve, and allow read-only Google Analytics access. Then retry.
+- **Connecting:** no API key is needed. If the user asks to connect, call `connect`; a data tool that
+  isn't connected yet says "Not connected yet" with the same link and code. Show the user the link
+  (clickable) and the code exactly as given: they open it in any browser, sign in to (or create) a
+  free Tag Pilot account, check the code, approve, and allow read-only Google Analytics access. When they
+  say they're done, call `connection_status` or retry their original question. Never ask the user
+  to run terminal commands.
 - Mention the property and date range you used, and any sampling or thresholding `notes` in the
   result.

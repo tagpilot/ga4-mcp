@@ -73,8 +73,26 @@ export const TEST_PRODUCT: Product = {
   slug: 'test-mcp',
   version: '9.8.7',
   title: 'Tag Pilot Test MCP',
+  label: 'Test MCP',
   pageUrl: 'https://app.tagpilot.io/test-mcp',
   googleAccess: 'read-only test access',
   envPrefix: 'TEST_MCP',
   keyScope: 'test:mcp',
 };
+
+import type { AccessTokenSource, ConnectionManager, ConnectionState } from '../src/auth/token-manager.js';
+
+/** Adds a (connected) ConnectionManager to a token stub, for server tests that don't test connecting. */
+export function withConnection<T extends AccessTokenSource>(
+  tokens: T,
+  product: Product = TEST_PRODUCT,
+  state: ConnectionState = { state: 'connected', mode: 'device', deviceLabel: 'Test MCP · CLI on test' },
+): T & ConnectionManager {
+  return Object.assign(tokens, {
+    product,
+    startConnect: async () => null,
+    connectionState: () => state,
+    waitForConnection: async () => state,
+    onEvent: () => () => {},
+  });
+}

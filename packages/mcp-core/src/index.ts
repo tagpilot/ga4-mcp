@@ -22,7 +22,16 @@ export {
   AuthPendingError,
   ReauthRequiredError,
   SignInFailedError,
+  connectInstructions,
+  deviceLabel,
+  pendingMessage,
   type AccessTokenSource,
+  type ConnectEvent,
+  type ConnectionManager,
+  type ConnectionState,
+  type PendingConnect,
   type TokenManagerOptions,
 } from './auth/token-manager.js';
 export * from './tool-result.js';
+export * from './terminal.js';
+export * from './connect-tools.js';

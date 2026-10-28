@@ -169,13 +169,17 @@ describe('device connect', () => {
     assert.equal(api.requests.length, before, 'served from device.json');
   });
 
-  test('tool call during connect: "Connect at <url> (code …), then ask again", polling continues', async () => {
+  test('tool call during connect: link + code for the user, polling continues', async () => {
     api = await startTcApi();
     let url = '';
     const { m } = manager(api, tempDir(), { authWaitMs: 50, openBrowser: (u) => (url = u) });
     const err = await m.getAccessToken().catch((e: unknown) => e);
     assert.ok(err instanceof AuthPendingError);
-    assert.match(err.message, /^Connect at http:\/\/127\.0\.0\.1:\d+\/connect\?code=ABCD-1001 \(code ABCD-1001\), then ask again\./);
+    assert.match(err.message, /^Not connected yet\. Connect at the link below and check the code; show this to the user exactly:/);
+    assert.match(err.message, /\[Connect Tag Pilot Test MCP\]\(http:\/\/127\.0\.0\.1:\d+\/connect\?code=ABCD-1001\)\nCode: \*\*ABCD-1001\*\*/);
+    assert.match(err.message, /go to http:\/\/127\.0\.0\.1:\d+\/connect and type the code/);
+    assert.match(err.message, /retry the original request \(or call connection_status/);
+    assert.match(err.message, /do not ask the user to run terminal commands/);
     assert.ok(api.polls() > 0);
     await fetch(url);
     assert.equal(await m.getAccessToken(), 'access-1');

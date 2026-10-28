@@ -12,6 +12,11 @@ export default tseslint.config(
     },
   },
   {
+    // Tests and e2e scripts match ANSI escapes (\x1b) on purpose.
+    files: ['**/test/**/*.ts', '**/scripts/**/*.mjs'],
+    rules: { 'no-control-regex': 'off' },
+  },
+  {
     rules: {
       '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
     },

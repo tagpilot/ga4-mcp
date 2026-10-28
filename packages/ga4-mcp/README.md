@@ -158,6 +158,8 @@ measurement IDs.
 | `run_funnel_report` | Funnels from event steps (with parameter and dimension conditions), open or closed, breakdowns, next actions, trended. Uses Google's v1alpha API. |
 | `check_duplicate_transactions` | **Tag Pilot check.** Purchase events per `transaction_id`: duplicate rate, worst duplicated IDs, purchases without an ID. |
 | `check_traffic_attribution` | **Tag Pilot check.** Sessions per channel group plus the share of Unassigned, `(not set)` source, `(not set)` landing page and Direct, with likely causes. |
+| `connect` | Connects this computer: returns a link and a code for you to approve in the browser (your AI shows them; clients that support MCP URL elicitation offer to open the link). Say *"connect my GA4"* to start it explicitly. |
+| `connection_status` | Connected (with the device name), waiting for approval (link and code again), not connected, or what went wrong. Waits up to 25 s for an open sign-in to finish. |
 
 ### Report inputs
 
@@ -198,12 +200,12 @@ same GA4 quota as the equivalent reports (3–4 report calls).
 
 ## Troubleshooting
 
-**"Connect at … (code ABCD-1234), then ask again"**: open the link in any browser (it doesn't
-have to be on this machine), sign in to Tag Pilot, check that the code matches, approve, and allow
-Google Analytics access. Then repeat the request. The server keeps checking in the background, so
-you don't need to restart anything. The code is valid for 10 minutes; after that, ask again to get
-a new one. To connect from a terminal instead (e.g. over SSH), run
-`npx -y @tagpilot/ga4-mcp login`: it prints the link and code and waits until you approve.
+**"Not connected yet" (a link and a code like `ABCD-1234`)**: your AI shows them. Open the link in any browser (it doesn't
+have to be on this machine), sign in to Tag Pilot, check that the code matches, approve, and allow Google Analytics
+access, then tell your AI you're done: it retries your question (or calls `connection_status`). The server keeps
+checking in the background, so nothing needs restarting. The code is valid for 10 minutes; after that, ask again (or
+say "connect GA4") for a new one. To connect from a terminal instead (e.g. over SSH), run
+`npx -y @tagpilot/ga4-mcp login`: it shows the link, the code in a box and a countdown, and waits until you approve.
 
 **"This computer was disconnected from Tag Pilot"**: the device was revoked on the GA4 MCP page,
 so its saved credential was removed. Ask again to connect it again.

@@ -9,6 +9,8 @@ export interface Product {
   version: string;
   /** e.g. "Tag Pilot GA4 MCP". */
   title: string;
+  /** Short name, as in the broker's device labels: "GA4 MCP", "Search Console MCP". */
+  label: string;
   /** The tc-app page with Connected devices and keys, e.g. https://app.tagpilot.io/ga4-mcp. */
   pageUrl: string;
   /** What the Google consent grants, e.g. "read-only Google Analytics access". */

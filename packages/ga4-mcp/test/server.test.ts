@@ -6,7 +6,8 @@ import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import { createServer } from '../src/server.js';
 import type { AccessTokenSource } from '../src/core.js';
-import { mockFetch } from '../../mcp-core/test/helpers.js';
+import { mockFetch, withConnection } from '../../mcp-core/test/helpers.js';
+import { PRODUCT } from '../src/product.js';
 
 function tokens(): AccessTokenSource & { invalidated: number; issued: number } {
   return {
@@ -24,7 +25,7 @@ function tokens(): AccessTokenSource & { invalidated: number; issued: number } {
 
 async function connect(respond: Parameters<typeof mockFetch>[0], src = tokens()) {
   const f = mockFetch(respond);
-  const server = createServer(src, { fetchImpl: f.fetch });
+  const server = createServer(withConnection(src, PRODUCT), { fetchImpl: f.fetch });
   const [a, b] = InMemoryTransport.createLinkedPair();
   const client = new Client({ name: 'test', version: '0' });
   await Promise.all([server.connect(a), client.connect(b)]);
@@ -52,6 +53,8 @@ describe('MCP server', () => {
     assert.deepEqual(names, [
       'check_duplicate_transactions',
       'check_traffic_attribution',
+      'connect',
+      'connection_status',
       'get_account_summaries',
       'get_custom_dimensions_and_metrics',
       'get_property_details',

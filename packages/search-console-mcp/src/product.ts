@@ -7,6 +7,7 @@ export const PRODUCT: Product = {
   slug: 'search-console-mcp',
   version: VERSION,
   title: 'Tag Pilot Search Console MCP',
+  label: 'Search Console MCP',
   pageUrl: 'https://app.tagpilot.io/search-console-mcp',
   googleAccess: 'read-only Google Search Console access',
   envPrefix: 'SEARCH_CONSOLE_MCP',

@@ -10,8 +10,8 @@ import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import { createServer } from '../src/server.js';
 import { VERSION } from '../src/version.js';
 
-// Compiled to build-test/test/, so the repo root is two levels up.
-const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
+// Compiled to build-test/packages/ga4-mcp/test/; the package sources are in packages/ga4-mcp.
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../../packages/ga4-mcp');
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const read = (f: string): any => JSON.parse(fs.readFileSync(path.join(root, f), 'utf8'));
 const pkg = read('package.json');

@@ -64,3 +64,17 @@ export function mockFetch(respond: (url: string, init: RequestInit) => { status?
   }) as typeof fetch;
   return { fetch: fn, calls };
 }
+
+import type { Product } from '../src/product.js';
+
+export const TEST_PRODUCT: Product = {
+  id: 'ga4',
+  npmName: '@tagpilot/test-mcp',
+  slug: 'test-mcp',
+  version: '9.8.7',
+  title: 'Tag Pilot Test MCP',
+  pageUrl: 'https://app.tagpilot.io/test-mcp',
+  googleAccess: 'read-only test access',
+  envPrefix: 'TEST_MCP',
+  keyScope: 'test:mcp',
+};

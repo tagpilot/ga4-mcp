@@ -1,5 +1,5 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import type { AccessTokenSource } from './auth/token-manager.js';
+import type { AccessTokenSource } from './core.js';
 import { GoogleApi, type GoogleApiOptions } from './google/api.js';
 import { registerAdminTools } from './tools/admin.js';
 import { registerHealthTools } from './tools/health.js';

@@ -3,10 +3,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { cacheFileFor, deviceFile, TokenCache, type CachedToken } from './auth/cache.js';
-import { APP_URL, type Config } from './config.js';
-import { VERSION } from './version.js';
-
-export const GA4_MCP_PAGE = `${APP_URL}/ga4-mcp`;
+import type { Config } from './config.js';
+import type { Product } from './product.js';
 
 /** Token files for TAGPILOT_API_KEY sign-ins in the cache directory, one per key. */
 export function savedTokenFiles(dir: string): string[] {
@@ -32,7 +30,7 @@ function describeGoogle(token: CachedToken | null, now: number): string {
  * With TAGPILOT_API_KEY: delete that key's sign-in. Without: delete this device's connection and
  * every saved key sign-in on this machine.
  */
-export function logout(config: Config): string[] {
+export function logout(product: Product, config: Config): string[] {
   const device = deviceFile(config.cacheDir);
   const hadDevice = !config.apiKey && Boolean(new TokenCache(device).read()?.api_key);
   const files = config.apiKey
@@ -43,7 +41,7 @@ export function logout(config: Config): string[] {
     ? removed.map((f) => `Removed ${f}`)
     : [config.apiKey ? 'No saved Google sign-in for this API key.' : `Nothing saved in ${config.cacheDir}.`];
   if (hadDevice) {
-    lines.push(`This device's Tag Pilot key stays listed until you revoke it under Connected devices on ${GA4_MCP_PAGE}`);
+    lines.push(`This device's Tag Pilot key stays listed until you revoke it under Connected devices on ${product.pageUrl}`);
   }
   lines.push('To also revoke the access at Google, visit https://myaccount.google.com/permissions');
   return lines;
@@ -51,8 +49,8 @@ export function logout(config: Config): string[] {
 
 const keyFile = (config: Config) => cacheFileFor(config.cacheDir, config.apiKey!);
 
-export function status(config: Config, now = Date.now()): string[] {
-  const lines = [`version: ${VERSION}`, `api url: ${config.apiUrl}`];
+export function status(product: Product, config: Config, now = Date.now()): string[] {
+  const lines = [`version: ${product.version}`, `api url: ${config.apiUrl}`];
   if (config.apiKey) {
     const file = keyFile(config);
     lines.push(`credential: TAGPILOT_API_KEY (${keyPrefix(config.apiKey)})`);
@@ -63,11 +61,11 @@ export function status(config: Config, now = Date.now()): string[] {
   const file = deviceFile(config.cacheDir);
   const device = new TokenCache(file).read();
   if (device?.api_key) {
-    lines.push(`device: connected (Tag Pilot key ${keyPrefix(device.api_key)}; manage it on ${GA4_MCP_PAGE})`);
+    lines.push(`device: connected (Tag Pilot key ${keyPrefix(device.api_key)}; manage it on ${product.pageUrl})`);
     lines.push(`token file: ${file}`);
     lines.push(`google: ${describeGoogle(device, now)}`);
   } else {
-    lines.push('device: not connected (the first GA4 question in your AI tool connects it, or run `npx -y @tagpilot/ga4-mcp login`)');
+    lines.push(`device: not connected (the first question in your AI tool connects it, or run \`npx -y ${product.npmName} login\`)`);
   }
   const keyFiles = savedTokenFiles(config.cacheDir);
   if (keyFiles.length) {

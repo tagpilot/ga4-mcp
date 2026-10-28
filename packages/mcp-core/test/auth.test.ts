@@ -9,7 +9,7 @@ import { AuthPendingError, ReauthRequiredError, SignInFailedError, TokenManager 
 import { createTokenManager } from '../src/auth/index.js';
 import { loadConfig } from '../src/config.js';
 import { SetupError } from '../src/errors.js';
-import { startMockServer, tempDir, type Recorded } from './helpers.js';
+import { startMockServer, tempDir, TEST_PRODUCT, type Recorded } from './helpers.js';
 
 const API_KEY = 'tpk_test_123';
 
@@ -87,8 +87,9 @@ const managers: TokenManager[] = [];
 function manager(broker: { url: string }, dir: string, extra: Partial<ConstructorParameters<typeof TokenManager>[0]> = {}) {
   const cache = new TokenCache(cacheFileFor(dir, API_KEY));
   const m = new TokenManager({
+    product: TEST_PRODUCT,
     credential: { kind: 'key', apiKey: API_KEY },
-    broker: (key) => new BrokerEndpoint(broker.url, key),
+    broker: (key) => new BrokerEndpoint(broker.url, key, TEST_PRODUCT),
     cache,
     authWaitMs: 5000,
     pollIntervalMs: 10,
@@ -127,7 +128,7 @@ describe('TAGPILOT_API_KEY sign-in (§K, polling)', () => {
 
     const [sessionReq] = byPath(broker, '/session');
     assert.equal(sessionReq.headers.authorization, `Bearer ${API_KEY}`);
-    assert.match(String(sessionReq.headers['user-agent']), /^tagpilot-ga4-mcp\/\d+\.\d+\.\d+$/);
+    assert.match(String(sessionReq.headers['user-agent']), /^tagpilot-test-mcp\/9\.8\.7$/);
     assert.deepEqual(Object.keys(sessionReq.body), ['code_challenge'], 'v2 sends only the challenge');
     const challenge = String(sessionReq.body.code_challenge);
     assert.match(challenge, /^[A-Za-z0-9_-]{43,128}$/);
@@ -290,7 +291,7 @@ describe('TAGPILOT_API_KEY sign-in (§K, polling)', () => {
 
   for (const [status, body, pattern] of [
     [401, { code: 401, message: 'Invalid' }, /invalid or revoked/],
-    [403, { code: 403, message: 'scope' }, /ga4:mcp/],
+    [403, { code: 403, message: 'scope' }, /test:mcp/],
     [503, { error: 'temporarily_unavailable', message: 'off' }, /not available/],
     [429, { error: 'rate_limited', message: 'slow' }, /Retry in 7 s/],
     [400, { error: 'invalid_request', message: 'code_challenge must be…' }, /rejected the request: code_challenge must be/],
@@ -312,21 +313,21 @@ describe('TAGPILOT_API_KEY sign-in (§K, polling)', () => {
 describe('configuration', () => {
   test('no key → device connect saved in device.json; a key → its own token file', () => {
     const dir = tempDir();
-    const device = createTokenManager(loadConfig({ GA4_MCP_CONFIG_DIR: dir }));
+    const device = createTokenManager(TEST_PRODUCT, loadConfig(TEST_PRODUCT, { TEST_MCP_CONFIG_DIR: dir }));
     assert.equal(device.mode, 'device');
     assert.equal(device.cacheFile, path.join(dir, 'device.json'));
-    const keyed = createTokenManager(loadConfig({ GA4_MCP_CONFIG_DIR: dir, TAGPILOT_API_KEY: API_KEY }));
+    const keyed = createTokenManager(TEST_PRODUCT, loadConfig(TEST_PRODUCT, { TEST_MCP_CONFIG_DIR: dir, TAGPILOT_API_KEY: API_KEY }));
     assert.equal(keyed.mode, 'key');
     assert.equal(keyed.cacheFile, cacheFileFor(dir, API_KEY));
   });
 
   test('defaults and overrides', () => {
-    const c = loadConfig({ TAGPILOT_API_KEY: ' tpk_x ', TAGPILOT_API_URL: 'http://localhost:8000/' });
+    const c = loadConfig(TEST_PRODUCT, { TAGPILOT_API_KEY: ' tpk_x ', TAGPILOT_API_URL: 'http://localhost:8000/' });
     assert.equal(c.apiKey, 'tpk_x');
     assert.equal(c.apiUrl, 'http://localhost:8000');
     assert.equal(c.authWaitMs, 45_000);
-    assert.equal(loadConfig({}).apiUrl, 'https://api.tagpilot.io');
-    assert.match(loadConfig({}).cacheDir, /\.config\/tagpilot\/ga4-mcp$/);
-    assert.equal(loadConfig({ GA4_MCP_NO_BROWSER: '1' }).openBrowser, false);
+    assert.equal(loadConfig(TEST_PRODUCT, {}).apiUrl, 'https://api.tagpilot.io');
+    assert.match(loadConfig(TEST_PRODUCT, {}).cacheDir, /\.config\/tagpilot\/test-mcp$/);
+    assert.equal(loadConfig(TEST_PRODUCT, { TEST_MCP_NO_BROWSER: '1' }).openBrowser, false);
   });
 });

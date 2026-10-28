@@ -1,5 +1,5 @@
 // Tool input → GA4 REST request bodies, and GA4 responses → compact rows.
-import { InputError } from '../errors.js';
+import { InputError } from '../core.js';
 import type { Condition, Filter, Matcher } from './schemas.js';
 import { NUMERIC_OPS, STRING_OPS } from './schemas.js';
 

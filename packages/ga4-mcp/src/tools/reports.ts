@@ -1,6 +1,6 @@
 // Data API report tools: run_report, run_realtime_report, run_funnel_report.
 import { z } from 'zod';
-import { InputError } from '../errors.js';
+import { InputError } from '../core.js';
 import { READ_ONLY, safe, type ToolContext } from './common.js';
 import {
   compactReport,

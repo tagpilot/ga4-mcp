@@ -5,8 +5,8 @@ import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import { createServer } from '../src/server.js';
-import type { AccessTokenSource } from '../src/auth/token-manager.js';
-import { mockFetch } from './helpers.js';
+import type { AccessTokenSource } from '../src/core.js';
+import { mockFetch } from '../../mcp-core/test/helpers.js';
 
 function tokens(): AccessTokenSource & { invalidated: number; issued: number } {
   return {

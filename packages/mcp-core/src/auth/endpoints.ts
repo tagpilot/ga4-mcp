@@ -1,10 +1,10 @@
 // Clients for the Tag Pilot token broker (explorations/ga4-mcp/api-contract.md, v3):
-//   DeviceEndpoint: keyless device connect (D1 start, D5 poll), which hands out a per-device ga4:mcp key.
+//   DeviceEndpoint: keyless device connect (D1 start, D5 poll), which hands out a per-device key
+//   (scope ga4:mcp or gsc:mcp, by the D1 `product`).
 //   BrokerEndpoint: key-authenticated calls: token exchange/refresh (D6) and the §K sign-in fallback.
 // The broker holds the Google OAuth client secret; Google tokens are only passed through.
-import { APP_URL } from '../config.js';
 import { SetupError } from '../errors.js';
-import { USER_AGENT } from '../version.js';
+import { userAgent, type Product } from '../product.js';
 
 export interface TokenResponse {
   access_token: string;
@@ -40,7 +40,7 @@ export class OAuthGrantError extends Error {
   }
 }
 
-/** Tag Pilot rejected the API key (401: invalid or revoked; 403: lacks ga4:mcp). */
+/** Tag Pilot rejected the API key (401: invalid or revoked; 403: lacks the product's scope). */
 export class KeyRejectedError extends SetupError {
   override name = 'KeyRejectedError';
   constructor(message: string, readonly status: 401 | 403) {
@@ -89,7 +89,7 @@ export class UnreachableError extends Error {
   override name = 'UnreachableError';
 }
 
-async function postJson(fetchImpl: FetchFn, apiUrl: string, path: string, body: Json, apiKey?: string) {
+async function postJson(fetchImpl: FetchFn, ua: string, apiUrl: string, path: string, body: Json, apiKey?: string) {
   let res: Response;
   try {
     res = await fetchImpl(`${apiUrl}${path}`, {
@@ -98,7 +98,7 @@ async function postJson(fetchImpl: FetchFn, apiUrl: string, path: string, body: 
         ...(apiKey ? { authorization: `Bearer ${apiKey}` } : {}),
         'content-type': 'application/json',
         accept: 'application/json',
-        'user-agent': USER_AGENT,
+        'user-agent': ua,
       },
       body: JSON.stringify(body),
     });
@@ -112,6 +112,7 @@ export class BrokerEndpoint implements AuthEndpoint {
   constructor(
     private readonly apiUrl: string,
     private readonly apiKey: string,
+    private readonly product: Product,
     private readonly fetchImpl: FetchFn = fetch,
   ) {}
 
@@ -163,7 +164,7 @@ export class BrokerEndpoint implements AuthEndpoint {
   }
 
   private async post(path: string, body: Json): Promise<Json | null> {
-    const { res, json } = await postJson(this.fetchImpl, this.apiUrl, path, body, this.apiKey);
+    const { res, json } = await postJson(this.fetchImpl, userAgent(this.product), this.apiUrl, path, body, this.apiKey);
     if (res.ok) return json;
 
     const message = json && typeof json.message === 'string' ? json.message : undefined;
@@ -176,12 +177,12 @@ export class BrokerEndpoint implements AuthEndpoint {
         throw new BrokerError(`Tag Pilot rejected the request: ${message ?? 'invalid request'}`, 400);
       case 401:
         throw new KeyRejectedError(
-          `Tag Pilot rejected TAGPILOT_API_KEY (invalid or revoked). Create a new key on the GA4 MCP page at ${APP_URL} and update this server's env, or remove TAGPILOT_API_KEY to connect this device in the browser instead.`,
+          `Tag Pilot rejected TAGPILOT_API_KEY (invalid or revoked). Create a new key at ${this.product.pageUrl} and update this server's env, or remove TAGPILOT_API_KEY to connect this device in the browser instead.`,
           401,
         );
       case 403:
         throw new KeyRejectedError(
-          `TAGPILOT_API_KEY does not have the "ga4:mcp" scope. Create a key on the GA4 MCP page at ${APP_URL} (it gets the right scope) and update this server's env.`,
+          `TAGPILOT_API_KEY does not have the "${this.product.keyScope}" scope. Create a key at ${this.product.pageUrl} (it gets the right scope) and update this server's env.`,
           403,
         );
       case 404:
@@ -193,7 +194,7 @@ export class BrokerEndpoint implements AuthEndpoint {
       case 502:
         throw new BrokerError('Tag Pilot could not reach Google to exchange the sign-in token. This is usually temporary; try again shortly.', 502);
       case 503:
-        throw new BrokerError('Google sign-in for the GA4 MCP is not available on this Tag Pilot server right now. Please try again later.', 503);
+        throw new BrokerError(`Google sign-in for ${this.product.title} is not available on this Tag Pilot server right now. Please try again later.`, 503);
       default:
         throw new BrokerError(`Tag Pilot returned HTTP ${res.status}${message ? `: ${message}` : ''}. Please try again later.`, res.status);
     }
@@ -232,6 +233,7 @@ const clip = (s: string | undefined) => (s ? s.slice(0, 64) : undefined);
 export class DeviceEndpoint {
   constructor(
     private readonly apiUrl: string,
+    private readonly product: Product,
     private readonly fetchImpl: FetchFn = fetch,
   ) {}
 
@@ -239,13 +241,17 @@ export class DeviceEndpoint {
     const client = Object.fromEntries(
       Object.entries({ name: clip(p.client.name), version: clip(p.client.version), hostname: clip(p.client.hostname) }).filter(([, v]) => v),
     );
-    const { res, json } = await postJson(this.fetchImpl, this.apiUrl, '/v3/public/ga4/device', { code_challenge: p.codeChallenge, client });
+    const { res, json } = await postJson(this.fetchImpl, userAgent(this.product), this.apiUrl, '/v3/public/ga4/device', {
+      product: this.product.id,
+      code_challenge: p.codeChallenge,
+      client,
+    });
     if (!res.ok) {
       if (res.status === 429) {
         throw new BrokerError('Too many connect attempts from this network. Wait a few minutes, then ask again.', 429, Number(res.headers.get('retry-after')) || undefined);
       }
       if (res.status === 503) {
-        throw new BrokerError('Connecting to Tag Pilot GA4 MCP is not available right now. Please try again later.', 503);
+        throw new BrokerError(`Connecting ${this.product.title} is not available right now. Please try again later.`, 503);
       }
       const message = json && typeof json.message === 'string' ? `: ${json.message}` : '';
       throw new BrokerError(`Tag Pilot returned HTTP ${res.status}${message} when starting the connect.`, res.status);
@@ -270,7 +276,7 @@ export class DeviceEndpoint {
     let res: Response;
     let json: Json | null;
     try {
-      ({ res, json } = await postJson(this.fetchImpl, this.apiUrl, '/v3/public/ga4/device/token', { device_code: deviceCode }));
+      ({ res, json } = await postJson(this.fetchImpl, userAgent(this.product), this.apiUrl, '/v3/public/ga4/device/token', { device_code: deviceCode }));
     } catch (e) {
       if (e instanceof UnreachableError) return { status: 'retry', reason: e.message };
       throw e;

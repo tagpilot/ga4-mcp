@@ -10,8 +10,7 @@ import { BrokerEndpoint, DeviceEndpoint } from '../src/auth/endpoints.js';
 import { AuthPendingError, ReauthRequiredError, SignInFailedError, TokenManager } from '../src/auth/token-manager.js';
 import { logout, status } from '../src/cli.js';
 import { loadConfig } from '../src/config.js';
-import { VERSION } from '../src/version.js';
-import { startMockServer, tempDir, type Recorded } from './helpers.js';
+import { startMockServer, tempDir, TEST_PRODUCT, type Recorded } from './helpers.js';
 
 interface DeviceSession {
   deviceCode: string;
@@ -108,8 +107,9 @@ const managers: TokenManager[] = [];
 function manager(api: { url: string }, dir: string, extra: Partial<ConstructorParameters<typeof TokenManager>[0]> = {}) {
   const cache = new TokenCache(deviceFile(dir));
   const m = new TokenManager({
-    credential: { kind: 'device', device: new DeviceEndpoint(api.url) },
-    broker: (key) => new BrokerEndpoint(api.url, key),
+    product: TEST_PRODUCT,
+    credential: { kind: 'device', device: new DeviceEndpoint(api.url, TEST_PRODUCT) },
+    broker: (key) => new BrokerEndpoint(api.url, key, TEST_PRODUCT),
     cache,
     authWaitMs: 5000,
     pollIntervalMs: 10,
@@ -142,8 +142,9 @@ describe('device connect', () => {
 
     const [start] = byPath(api, '/v3/public/ga4/device');
     assert.equal(start.headers.authorization, undefined, 'D1 is public');
-    assert.match(String(start.headers['user-agent']), /^tagpilot-ga4-mcp\//);
-    assert.deepEqual(start.body.client, { name: 'Claude Desktop', version: VERSION, hostname: os.hostname().slice(0, 64) });
+    assert.match(String(start.headers['user-agent']), /^tagpilot-test-mcp\/9\.8\.7$/);
+    assert.equal(start.body.product, 'ga4', 'D1 names the product');
+    assert.deepEqual(start.body.client, { name: 'Claude Desktop', version: '9.8.7', hostname: os.hostname().slice(0, 64) });
     const challenge = String(start.body.code_challenge);
     assert.match(opened, /\/connect\?code=ABCD-/);
 
@@ -253,7 +254,7 @@ describe('device connect', () => {
 
     const err = await m.getAccessToken().catch((e: unknown) => e);
     assert.ok(err instanceof ReauthRequiredError);
-    assert.match(err.message, /disconnected from Tag Pilot.*revoked on the GA4 MCP page/);
+    assert.match(err.message, /disconnected from Tag Pilot.*revoked on https:\/\/app\.tagpilot\.io\/test-mcp/);
     assert.equal(cache.read(), null, 'device.json deleted');
     assert.equal(byPath(api, '/v3/public/ga4/device').length, 0, 'no connect during the failing call');
 
@@ -295,11 +296,11 @@ describe('status and logout with device connect', () => {
 
   test('status: not connected / connected with key prefix and Google state', () => {
     const dir = tempDir();
-    const config = loadConfig({ GA4_MCP_CONFIG_DIR: dir });
-    assert.match(status(config, now).join('\n'), /device: not connected \(the first GA4 question/);
+    const config = loadConfig(TEST_PRODUCT, { TEST_MCP_CONFIG_DIR: dir });
+    assert.match(status(TEST_PRODUCT, config, now).join('\n'), /device: not connected \(the first question/);
     new TokenCache(deviceFile(dir)).write({ api_key: 'tpk_abcdef123456', refresh_token: 'r', expiry: now + 60_000 });
-    const out = status(config, now).join('\n');
-    assert.match(out, /device: connected \(Tag Pilot key tpk_abcd…; manage it on https:\/\/app\.tagpilot\.io\/ga4-mcp\)/);
+    const out = status(TEST_PRODUCT, config, now).join('\n');
+    assert.match(out, /device: connected \(Tag Pilot key tpk_abcd…; manage it on https:\/\/app\.tagpilot\.io\/test-mcp\)/);
     assert.match(out, /google: signed in \(access token valid until 2026-10-28T12:01:00/);
     assert.ok(!out.includes('tpk_abcdef123456'), 'never prints the whole key');
   });
@@ -307,9 +308,9 @@ describe('status and logout with device connect', () => {
   test('logout removes device.json and says how to revoke the device', () => {
     const dir = tempDir();
     new TokenCache(deviceFile(dir)).write({ api_key: 'tpk_abcdef123456', refresh_token: 'r' });
-    const lines = logout(loadConfig({ GA4_MCP_CONFIG_DIR: dir }));
+    const lines = logout(TEST_PRODUCT, loadConfig(TEST_PRODUCT, { TEST_MCP_CONFIG_DIR: dir }));
     assert.equal(fs.existsSync(deviceFile(dir)), false);
     assert.match(lines.join('\n'), /Removed .*device\.json/);
-    assert.match(lines.join('\n'), /revoke it under Connected devices on https:\/\/app\.tagpilot\.io\/ga4-mcp/);
+    assert.match(lines.join('\n'), /revoke it under Connected devices on https:\/\/app\.tagpilot\.io\/test-mcp/);
   });
 });

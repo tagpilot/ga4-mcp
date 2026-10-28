@@ -1,13 +1,13 @@
 // Hands out Google access tokens: from the cache, by refreshing (through the broker), or by signing in.
 // Two ways to sign in (api-contract.md v3):
 //   - device connect (default, no key configured): the user approves this device in their Tag Pilot
-//     account, which goes on to Google's consent; we receive a per-device ga4:mcp key + the Google code.
+//     account, which goes on to Google's consent; we receive a per-device key + the Google code.
 //   - key sign-in (§K, TAGPILOT_API_KEY set): Google consent for that key.
 // Both poll the broker, so the browser can be on any machine. A tool call waits up to `authWaitMs`;
 // after that it returns a "finish connecting, then ask again" message while polling continues.
 import os from 'node:os';
 import { log } from '../log.js';
-import { VERSION } from '../version.js';
+import type { Product } from '../product.js';
 import type { CachedToken, TokenCache } from './cache.js';
 import {
   KeyRejectedError,
@@ -46,6 +46,7 @@ export interface AccessTokenSource {
 export type Credential = { kind: 'key'; apiKey: string } | { kind: 'device'; device: DeviceEndpoint };
 
 export interface TokenManagerOptions {
+  product: Product;
   credential: Credential;
   /** Key-authenticated broker calls (token exchange/refresh, §K sign-in) for a given key. */
   broker: (apiKey: string) => AuthEndpoint;
@@ -137,7 +138,7 @@ export class TokenManager implements AccessTokenSource {
         this.opts.cache.clear();
         log('Google rejected the saved refresh token (invalid_grant); removed the saved sign-in.');
         throw new ReauthRequiredError(
-          'Your Google sign-in for GA4 expired or was revoked, so the saved sign-in was removed. ' +
+          'Your Google sign-in expired or was revoked, so the saved sign-in was removed. ' +
             'Ask again: the next request starts a new sign-in (a browser window opens).',
         );
       }
@@ -145,7 +146,7 @@ export class TokenManager implements AccessTokenSource {
         this.opts.cache.clear();
         log('Tag Pilot rejected this device\'s key (revoked?); removed the saved connection.');
         throw new ReauthRequiredError(
-          'This computer was disconnected from Tag Pilot (the device was revoked on the GA4 MCP page), so its saved connection was removed. ' +
+          `This computer was disconnected from Tag Pilot (the device was revoked on ${this.opts.product.pageUrl}), so its saved connection was removed. ` +
             'Ask again to connect it again (a browser window opens).',
         );
       }
@@ -194,7 +195,7 @@ export class TokenManager implements AccessTokenSource {
       log('Warning: Google returned no refresh token; you will need to sign in again when the access token expires.');
     }
     this.save(res, {}, apiKey);
-    log(`Connected to Google Analytics. Saved to ${this.opts.cache.file}`);
+    log(`Connected. Saved to ${this.opts.cache.file}`);
     return res.access_token;
   }
 
@@ -202,12 +203,12 @@ export class TokenManager implements AccessTokenSource {
 
   private async startDeviceConnect(device: DeviceEndpoint): Promise<PendingAuth> {
     const { verifier, challenge } = createPkce();
-    const client: DeviceClientInfo = { name: this.opts.clientName?.() || 'CLI', version: VERSION, hostname: os.hostname() };
+    const client: DeviceClientInfo = { name: this.opts.clientName?.() || 'CLI', version: this.opts.product.version, hostname: os.hostname() };
     const s = await device.start({ codeChallenge: challenge, client });
     const url = s.verificationUriComplete;
     log(
-      `Connect Tag Pilot GA4 MCP: open ${url} in any browser and confirm the code ${s.userCode}.\n` +
-        'Sign in to (or create) your free Tag Pilot account, approve this device, then allow read-only Google Analytics access.',
+      `Connect ${this.opts.product.title}: open ${url} in any browser and confirm the code ${s.userCode}.\n` +
+        `Sign in to (or create) your free Tag Pilot account, approve this device, then allow ${this.opts.product.googleAccess}.`,
     );
     this.opts.openBrowser?.(url);
     const done = this.pollDevice(device, s.deviceCode, s.interval, s.expiresIn, verifier);
@@ -217,7 +218,7 @@ export class TokenManager implements AccessTokenSource {
       pendingMessage:
         `Connect at ${url} (code ${s.userCode}), then ask again.\n` +
         'A browser window should have opened; if not, open the link in any browser, on any device. Sign in to your free Tag Pilot account, ' +
-        'check the code, approve this device, then allow read-only Google Analytics access.',
+        `check the code, approve this device, then allow ${this.opts.product.googleAccess}.`,
       done,
     };
   }
@@ -264,7 +265,7 @@ export class TokenManager implements AccessTokenSource {
     const { verifier, challenge } = createPkce();
     const session = await endpoint.startSession({ codeChallenge: challenge });
     const url = session.authorizeUrl;
-    log(`Sign in with Google to give read-only access to Google Analytics. Open this link in any browser:\n${url}`);
+    log(`Sign in with Google to give ${this.opts.product.googleAccess}. Open this link in any browser:\n${url}`);
     this.opts.openBrowser?.(url);
     const done = this.pollKeySession(endpoint, session.sessionId, session.pollInterval, session.expiresIn, verifier);
     done.catch(() => {});
@@ -272,7 +273,7 @@ export class TokenManager implements AccessTokenSource {
       url,
       pendingMessage:
         `Finish signing in with Google at ${url} , then ask again.\n` +
-        'A browser window should have opened; if not, open the link in any browser, on any device, and approve read-only access to Google Analytics.',
+        `A browser window should have opened; if not, open the link in any browser, on any device, and approve ${this.opts.product.googleAccess}.`,
       done,
     };
   }

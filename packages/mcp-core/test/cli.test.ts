@@ -6,6 +6,7 @@ import path from 'node:path';
 import { TokenCache, cacheFileFor } from '../src/auth/cache.js';
 import { logout, savedTokenFiles, status } from '../src/cli.js';
 import { loadConfig } from '../src/config.js';
+import { TEST_PRODUCT } from './helpers.js';
 
 describe('CLI helpers without the API key in the shell', () => {
   let dir: string;
@@ -16,7 +17,7 @@ describe('CLI helpers without the API key in the shell', () => {
   });
   afterEach(() => fs.rmSync(dir, { recursive: true, force: true }));
 
-  const config = (apiKey?: string) => loadConfig({ GA4_MCP_CONFIG_DIR: dir, ...(apiKey ? { TAGPILOT_API_KEY: apiKey } : {}) });
+  const config = (apiKey?: string) => loadConfig(TEST_PRODUCT, { TEST_MCP_CONFIG_DIR: dir, ...(apiKey ? { TAGPILOT_API_KEY: apiKey } : {}) });
 
   function save(key: string, token: object): string {
     const file = cacheFileFor(dir, key);
@@ -29,7 +30,7 @@ describe('CLI helpers without the API key in the shell', () => {
     save('tpk_b', { refresh_token: 'r', access_token: 'a', expiry: now - 1 });
     fs.writeFileSync(path.join(dir, 'unrelated.json'), '{}');
 
-    const lines = status(config(), now);
+    const lines = status(TEST_PRODUCT, config(), now);
 
     assert.match(lines.join('\n'), /device: not connected/);
     assert.ok(lines.includes('saved TAGPILOT_API_KEY sign-ins: 2'));
@@ -38,7 +39,7 @@ describe('CLI helpers without the API key in the shell', () => {
   });
 
   test('status with no saved sign-ins says how to sign in', () => {
-    assert.match(status(config(), now).join('\n'), /device: not connected \(the first GA4 question/);
+    assert.match(status(TEST_PRODUCT, config(), now).join('\n'), /device: not connected \(the first question/);
   });
 
   test('logout without a key removes every saved sign-in, and only those', () => {
@@ -46,7 +47,7 @@ describe('CLI helpers without the API key in the shell', () => {
     save('tpk_b', { refresh_token: 'r' });
     fs.writeFileSync(path.join(dir, 'unrelated.json'), '{}');
 
-    const lines = logout(config());
+    const lines = logout(TEST_PRODUCT, config());
 
     assert.equal(lines.filter((l) => l.startsWith('Removed ')).length, 2);
     assert.deepEqual(savedTokenFiles(dir), []);
@@ -57,13 +58,13 @@ describe('CLI helpers without the API key in the shell', () => {
     const a = save('tpk_a', { refresh_token: 'r' });
     const b = save('tpk_b', { refresh_token: 'r' });
 
-    logout(config('tpk_a'));
+    logout(TEST_PRODUCT, config('tpk_a'));
 
     assert.equal(fs.existsSync(a), false);
     assert.equal(fs.existsSync(b), true);
   });
 
   test('logout with nothing saved says so', () => {
-    assert.match(logout(config())[0], /Nothing saved in/);
+    assert.match(logout(TEST_PRODUCT, config())[0], /Nothing saved in/);
   });
 });

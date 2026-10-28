@@ -1,7 +1,7 @@
 // Thin fetch-based client for the GA4 Admin and Data REST APIs. Requests go straight from this
 // machine to Google with the user's own access token.
-import type { AccessTokenSource } from '../auth/token-manager.js';
-import { USER_AGENT } from '../version.js';
+import { GoogleApiError, GoogleHttp, userAgent, type AccessTokenSource, type GoogleErrorBody } from '../core.js';
+import { PRODUCT } from '../product.js';
 
 export interface GoogleApiOptions {
   adminApiUrl?: string;
@@ -9,20 +9,6 @@ export interface GoogleApiOptions {
   fetchImpl?: typeof fetch;
 }
 
-export class Ga4ApiError extends Error {
-  override name = 'Ga4ApiError';
-  constructor(
-    message: string,
-    readonly httpStatus: number,
-    readonly googleStatus?: string,
-  ) {
-    super(message);
-  }
-}
-
-interface GoogleErrorBody {
-  error?: { code?: number; message?: string; status?: string; details?: Array<Record<string, unknown>> };
-}
 
 export interface RequestContext {
   /** Numeric property ID, used to make 403/404 errors specific. */
@@ -31,7 +17,7 @@ export interface RequestContext {
 
 const SCHEMA_URL = 'https://developers.google.com/analytics/devguides/reporting/data/v1/api-schema';
 
-export function describeGoogleError(status: number, body: GoogleErrorBody | null, ctx: RequestContext = {}): Ga4ApiError {
+export function describeGoogleError(status: number, body: GoogleErrorBody | null, ctx: RequestContext = {}): GoogleApiError {
   const gStatus = body?.error?.status;
   const gMessage = body?.error?.message ?? `HTTP ${status}`;
   const prop = ctx.propertyId ? `property ${ctx.propertyId}` : 'this resource';
@@ -64,21 +50,18 @@ export function describeGoogleError(status: number, body: GoogleErrorBody | null
   } else {
     message = `Google Analytics API error (HTTP ${status}): ${gMessage}`;
   }
-  return new Ga4ApiError(message, status, gStatus);
+  return new GoogleApiError(message, status, gStatus);
 }
 
 export class GoogleApi {
   private readonly adminApiUrl: string;
   private readonly dataApiUrl: string;
-  private readonly fetchImpl: typeof fetch;
+  private readonly http: GoogleHttp<RequestContext>;
 
-  constructor(
-    private readonly tokens: AccessTokenSource,
-    opts: GoogleApiOptions = {},
-  ) {
+  constructor(tokens: AccessTokenSource, opts: GoogleApiOptions = {}) {
     this.adminApiUrl = opts.adminApiUrl ?? 'https://analyticsadmin.googleapis.com';
     this.dataApiUrl = opts.dataApiUrl ?? 'https://analyticsdata.googleapis.com';
-    this.fetchImpl = opts.fetchImpl ?? fetch;
+    this.http = new GoogleHttp(tokens, describeGoogleError, userAgent(PRODUCT), opts.fetchImpl);
   }
 
   /** GET on the Admin API, e.g. admin('v1beta', '/accountSummaries'). */
@@ -112,38 +95,7 @@ export class GoogleApi {
     return this.request<T>('POST', `${this.dataApiUrl}/${version}${path}`, body, ctx);
   }
 
-  private async request<T>(method: string, url: string, body: unknown, ctx?: RequestContext): Promise<T> {
-    const send = async (token: string) => {
-      try {
-        return await this.fetchImpl(url, {
-          method,
-          headers: {
-            authorization: `Bearer ${token}`,
-            accept: 'application/json',
-            'user-agent': USER_AGENT,
-            ...(body !== undefined ? { 'content-type': 'application/json' } : {}),
-          },
-          body: body !== undefined ? JSON.stringify(body) : undefined,
-        });
-      } catch (e) {
-        throw new Error(`Could not reach Google (${new URL(url).host}): ${(e as Error).message}`);
-      }
-    };
-
-    let res = await send(await this.tokens.getAccessToken());
-    if (res.status === 401) {
-      // Access token revoked or expired early: refresh once and retry.
-      this.tokens.invalidateAccessToken();
-      res = await send(await this.tokens.getAccessToken());
-    }
-    const text = await res.text();
-    let json: unknown = null;
-    try {
-      json = text ? JSON.parse(text) : null;
-    } catch {
-      /* non-JSON error page */
-    }
-    if (!res.ok) throw describeGoogleError(res.status, json as GoogleErrorBody | null, ctx);
-    return json as T;
+  private request<T>(method: string, url: string, body: unknown, ctx: RequestContext = {}): Promise<T> {
+    return this.http.request<T>(method, url, body, ctx);
   }
 }

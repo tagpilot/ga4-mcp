@@ -1,46 +1,24 @@
 {
-  "name": "@tagpilot/ga4-mcp",
-  "version": "0.3.0",
-  "mcpName": "io.github.tagpilot/ga4-mcp",
-  "description": "Free, read-only Google Analytics 4 MCP server by Tag Pilot. Zero Google Cloud setup: sign in with Google in your browser, query GA4 from Claude, Cursor and other MCP clients.",
-  "license": "Apache-2.0",
+  "name": "tagpilot-mcp-servers",
+  "private": true,
   "type": "module",
-  "bin": {
-    "ga4-mcp": "dist/index.js"
-  },
-  "main": "dist/server.js",
-  "files": [
-    "dist",
-    "README.md",
-    "LICENSE",
-    "NOTICE"
+  "description": "Tag Pilot's free, read-only MCP servers for Google Analytics 4 and Google Search Console.",
+  "license": "Apache-2.0",
+  "workspaces": [
+    "packages/*"
   ],
   "engines": {
     "node": ">=18"
   },
-  "keywords": [
-    "mcp",
-    "model-context-protocol",
-    "google-analytics",
-    "ga4",
-    "analytics",
-    "tagpilot"
-  ],
-  "homepage": "https://tagpilot.io/ga4-mcp",
   "scripts": {
-    "build": "rm -rf dist && tsc -p tsconfig.json && chmod +x dist/index.js",
-    "typecheck": "tsc -p tsconfig.test.json --noEmit",
+    "build": "node scripts/build.mjs",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "eslint .",
-    "test": "rm -rf build-test && tsc -p tsconfig.test.json && node --test build-test/test/",
+    "test": "rm -rf build-test && tsc -p tsconfig.json && node --test \"build-test/packages/*/test/*.test.js\"",
     "check": "npm run typecheck && npm run lint && npm test",
-    "prepublishOnly": "npm run check && npm run build",
-    "e2e": "node scripts/e2e.mjs",
-    "mcpb": "npm run build && node scripts/build-mcpb.mjs",
-    "mcpb:smoke": "node scripts/mcpb-smoke.mjs"
-  },
-  "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.32.2",
-    "zod": "^4.1.0"
+    "e2e": "npm run build && npm run e2e --workspace packages/ga4-mcp --workspace packages/search-console-mcp",
+    "mcpb": "npm run build && node scripts/build-mcpb.mjs ga4-mcp && node scripts/build-mcpb.mjs search-console-mcp",
+    "mcpb:smoke": "node scripts/mcpb-smoke.mjs ga4-mcp && node scripts/mcpb-smoke.mjs search-console-mcp"
   },
   "devDependencies": {
     "@anthropic-ai/mcpb": "^2.1.2",
@@ -48,14 +26,7 @@
     "@types/node": "^22.20.5",
     "eslint": "^9.39.0",
     "typescript": "~5.9.3",
-    "typescript-eslint": "^8.72.1"
-  },
-  "author": "Tag Concierge sp. z o.o. (https://tagpilot.io)",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/tagpilot/ga4-mcp.git"
-  },
-  "bugs": {
-    "url": "https://github.com/tagpilot/ga4-mcp/issues"
+    "typescript-eslint": "^8.72.1",
+    "esbuild": "^0.28.2"
   }
 }

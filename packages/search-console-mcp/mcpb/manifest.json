@@ -1,0 +1,94 @@
+{
+  "manifest_version": "0.3",
+  "name": "tagpilot-search-console-mcp",
+  "display_name": "Tag Pilot Search Console",
+  "version": "0.1.0",
+  "description": "Free, read-only Google Search Console: search performance, period comparisons, SEO opportunities, URL inspection and sitemaps. No Google Cloud setup.",
+  "long_description": "Ask Claude about your Google Search Console data: clicks, impressions, CTR and positions by query, page, country or device; what changed between two periods; low-CTR and \"striking distance\" opportunities; Google's index status for a URL; and your sitemaps.\n\n**No Google Cloud setup.** Install, ask a Search Console question, and approve in the browser window that opens: sign in to (or create) your free Tag Pilot account, confirm the code, and allow read-only Search Console access. No API key to copy.\n\n**Read-only and private.** The only Google scope is `webmasters.readonly`. Your Search Console data goes from your computer straight to Google; Tag Pilot only brokers the token exchange and stores no Google tokens. The refresh token stays on your computer in `~/.config/tagpilot/search-console-mcp`.",
+  "author": {
+    "name": "Tag Pilot (Tag Concierge sp. z o.o.)",
+    "url": "https://tagpilot.io"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tagpilot/ga4-mcp.git"
+  },
+  "homepage": "https://tagpilot.io/search-console-mcp",
+  "documentation": "https://github.com/tagpilot/ga4-mcp/tree/main/packages/search-console-mcp#readme",
+  "support": "https://github.com/tagpilot/ga4-mcp/issues",
+  "icon": "icon.png",
+  "server": {
+    "type": "node",
+    "entry_point": "server/index.js",
+    "mcp_config": {
+      "command": "node",
+      "args": [
+        "${__dirname}/server/index.js"
+      ],
+      "env": {
+        "TAGPILOT_API_KEY": "${user_config.api_key}"
+      }
+    }
+  },
+  "tools": [
+    {
+      "name": "list_sites",
+      "description": "Search Console properties you can read (domain and URL-prefix), with permission level."
+    },
+    {
+      "name": "search_analytics",
+      "description": "Clicks, impressions, CTR and position by date, query, page, country, device or search appearance."
+    },
+    {
+      "name": "compare_periods",
+      "description": "Period-over-period changes by query or page, with deltas and property totals."
+    },
+    {
+      "name": "find_opportunities",
+      "description": "Low-CTR page-one queries and striking-distance (positions ~5–20) queries or pages."
+    },
+    {
+      "name": "inspect_url",
+      "description": "Google's index status for one URL: coverage, canonical, last crawl, rich results."
+    },
+    {
+      "name": "list_sitemaps",
+      "description": "Submitted sitemaps with errors, warnings and submitted URL counts."
+    },
+    {
+      "name": "get_sitemap",
+      "description": "Details of one submitted sitemap."
+    }
+  ],
+  "keywords": [
+    "google search console",
+    "search console",
+    "seo",
+    "search performance",
+    "url inspection",
+    "tagpilot"
+  ],
+  "license": "Apache-2.0",
+  "privacy_policies": [
+    "https://tagpilot.io/privacy-policy#google-user-data"
+  ],
+  "compatibility": {
+    "platforms": [
+      "darwin",
+      "win32",
+      "linux"
+    ],
+    "runtimes": {
+      "node": ">=18.0.0"
+    }
+  },
+  "user_config": {
+    "api_key": {
+      "type": "string",
+      "title": "Tag Pilot API key (optional)",
+      "description": "Leave empty: your first Search Console question connects this computer to your free Tag Pilot account in the browser. Only for headless setups: a gsc:mcp key (tpk_…) from https://app.tagpilot.io/search-console-mcp",
+      "sensitive": true,
+      "required": false
+    }
+  }
+}

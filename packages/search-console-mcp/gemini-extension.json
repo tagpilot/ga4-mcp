@@ -1,0 +1,12 @@
+{
+  "name": "tagpilot-search-console",
+  "version": "0.1.0",
+  "description": "Free, read-only Google Search Console by Tag Pilot: search performance, period comparisons, SEO opportunities, URL inspection and sitemaps. No Google Cloud setup.",
+  "mcpServers": {
+    "search-console": {
+      "command": "npx",
+      "args": ["-y", "@tagpilot/search-console-mcp@0.1.0"]
+    }
+  },
+  "contextFileName": "GEMINI.md"
+}

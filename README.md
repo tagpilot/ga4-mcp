@@ -42,10 +42,17 @@ npm run mcpb:smoke # unpack each bundle, check its tools, run the e2e against it
 
 Per package, from its directory: bump the version in `package.json`, `src/version.ts`,
 `server.json`, `mcpb/manifest.json` and the Gemini extension (GA4: repo-root
-`gemini-extension.json`); `npm test` checks they match. Then `npm publish --access public`, build
-the `.mcpb`, and push a tag **`<package>-v<version>`** (`ga4-mcp-v0.3.1`,
-`search-console-mcp-v0.1.0`): the *Publish to MCP Registry* workflow publishes that package's
-`server.json`.
+`gemini-extension.json`); `npm test` checks they match. Then:
+
+1. `npm publish --access public` from the package directory.
+2. Push a tag **`<package>-v<version>`** (`ga4-mcp-v0.3.1`, `search-console-mcp-v0.1.0`): the
+   *Publish to MCP Registry* workflow publishes that package's `server.json`.
+3. Create a GitHub release for the tag (`gh release create <tag> --generate-notes`). The
+   *Release .mcpb extensions* workflow builds, smoke-tests and attaches **both**
+   `tagpilot-ga4-mcp.mcpb` and `tagpilot-search-console-mcp.mcpb` to every release, so the
+   `releases/latest/download/<asset>` links in the READMEs, the app and the website always work,
+   whichever package was released last. Two assets also keep `gemini extensions install` on the
+   source archive: with a single asset, Gemini CLI would try to install that file as the extension.
 
 ## License
 

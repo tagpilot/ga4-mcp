@@ -1,0 +1,64 @@
+name: Release .mcpb extensions
+
+# Attaches BOTH Claude Desktop extensions to every GitHub release, whichever package the release is
+# for. The README, app.tagpilot.io and tagpilot.io link to
+#   https://github.com/tagpilot/ga4-mcp/releases/latest/download/tagpilot-ga4-mcp.mcpb
+#   https://github.com/tagpilot/ga4-mcp/releases/latest/download/tagpilot-search-console-mcp.mcpb
+# and "latest" is the newest release of either package, so each release must carry both.
+# Two assets (never exactly one) also keep `gemini extensions install <repo>` on the source archive:
+# with a single asset, Gemini CLI would install that file as the extension.
+#
+# Runs when a release is published (create it with `gh release create <tag> --generate-notes`),
+# or by hand for an existing release tag.
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag to (re)attach the .mcpb files to, e.g. ga4-mcp-v0.3.0
+        required: true
+        type: string
+
+jobs:
+  mcpb:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # upload release assets
+
+    steps:
+      - name: Pick the tag
+        id: tag
+        env:
+          TAG: ${{ github.event.release.tag_name || inputs.tag }}
+        run: echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ steps.tag.outputs.tag }}
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Check
+        run: npm run check
+
+      - name: Build both bundles
+        run: npm run mcpb
+
+      - name: Smoke-test both bundles
+        run: npm run mcpb:smoke
+
+      - name: Attach to the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.tag.outputs.tag }}
+        run: |
+          gh release upload "$TAG" --clobber \
+            packages/ga4-mcp/tagpilot-ga4-mcp.mcpb \
+            packages/search-console-mcp/tagpilot-search-console-mcp.mcpb
+          gh release view "$TAG" --json assets --jq '.assets[].name'

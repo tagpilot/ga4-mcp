@@ -25,12 +25,14 @@ claude mcp add ga4 -- npx -y @tagpilot/ga4-mcp
 
 ## Install
 
+[![Add to Cursor](https://cursor.com/deeplink/mcp-install-dark.svg)](https://cursor.com/install-mcp?name=ga4&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsIkB0YWdwaWxvdC9nYTQtbWNwIl19) [![Install in VS Code](https://img.shields.io/badge/VS_Code-Install_server-0098FF?logo=visualstudiocode&logoColor=white)](https://vscode.dev/redirect/mcp/install?name=ga4&config=%7B%22command%22%3A%22npx%22%2C%22args%22%3A%5B%22-y%22%2C%22%40tagpilot%2Fga4-mcp%22%5D%7D)
+
 | Client | How |
 |---|---|
 | Claude Desktop | [Download the extension](https://github.com/tagpilot/ga4-mcp/releases/latest/download/tagpilot-ga4-mcp.mcpb) and open it (no Node.js needed) |
 | Claude Code | `claude mcp add ga4 -- npx -y @tagpilot/ga4-mcp` |
-| Cursor | **Add to Cursor** button on [app.tagpilot.io/ga4-mcp](https://app.tagpilot.io/ga4-mcp), or `mcp.json` below |
-| VS Code | **Install in VS Code** button on [app.tagpilot.io/ga4-mcp](https://app.tagpilot.io/ga4-mcp) or [tagpilot.io/ga4-mcp](https://tagpilot.io/ga4-mcp) |
+| Cursor | [Add to Cursor](https://cursor.com/install-mcp?name=ga4&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsIkB0YWdwaWxvdC9nYTQtbWNwIl19), or `mcp.json` below |
+| VS Code | [Install in VS Code](https://vscode.dev/redirect/mcp/install?name=ga4&config=%7B%22command%22%3A%22npx%22%2C%22args%22%3A%5B%22-y%22%2C%22%40tagpilot%2Fga4-mcp%22%5D%7D) |
 | Gemini CLI | `gemini extensions install https://github.com/tagpilot/ga4-mcp` |
 | Anything else | `npx -y @tagpilot/ga4-mcp` (stdio) |
 
@@ -66,7 +68,7 @@ claude mcp add ga4 -- npx -y @tagpilot/ga4-mcp
 
 ### Cursor
 
-Use the **Add to Cursor** button on the GA4 MCP page, or add to `~/.cursor/mcp.json` (or
+Use [Add to Cursor](https://cursor.com/install-mcp?name=ga4&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsIkB0YWdwaWxvdC9nYTQtbWNwIl19), or add to `~/.cursor/mcp.json` (or
 `.cursor/mcp.json` in a project):
 
 ```json
@@ -82,7 +84,7 @@ Use the **Add to Cursor** button on the GA4 MCP page, or add to `~/.cursor/mcp.j
 
 ### VS Code
 
-Use the **Install in VS Code** button, or run **MCP: Add Server** → *Command (stdio)* with
+Use [Install in VS Code](https://vscode.dev/redirect/mcp/install?name=ga4&config=%7B%22command%22%3A%22npx%22%2C%22args%22%3A%5B%22-y%22%2C%22%40tagpilot%2Fga4-mcp%22%5D%7D), or run **MCP: Add Server** → *Command (stdio)* with
 `npx -y @tagpilot/ga4-mcp`.
 
 ### Gemini CLI

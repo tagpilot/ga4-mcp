@@ -1,12 +1,14 @@
-// Helper commands (login/logout/status). The API key usually lives only in the MCP client's
-// config, not in the user's shell, so logout and status must also work without it.
+// Helper commands (login/logout/status). Normally no key is configured anywhere: the device connect
+// saves its credential in device.json. With TAGPILOT_API_KEY set, that key's own token file is used.
 import fs from 'node:fs';
 import path from 'node:path';
-import { TokenCache, type CachedToken } from './auth/cache.js';
-import type { Config } from './config.js';
+import { cacheFileFor, deviceFile, TokenCache, type CachedToken } from './auth/cache.js';
+import { APP_URL, type Config } from './config.js';
 import { VERSION } from './version.js';
 
-/** Saved Google sign-ins in the cache directory, one file per API key. */
+export const GA4_MCP_PAGE = `${APP_URL}/ga4-mcp`;
+
+/** Token files for TAGPILOT_API_KEY sign-ins in the cache directory, one per key. */
 export function savedTokenFiles(dir: string): string[] {
   try {
     return fs
@@ -19,44 +21,58 @@ export function savedTokenFiles(dir: string): string[] {
   }
 }
 
-function describeToken(token: CachedToken | null, now: number): string {
+const keyPrefix = (key: string) => `${key.slice(0, 8)}…`;
+
+function describeGoogle(token: CachedToken | null, now: number): string {
   if (!token?.refresh_token) return 'not signed in';
   return `signed in (access token ${token.expiry && token.expiry > now ? `valid until ${new Date(token.expiry).toISOString()}` : 'expired, refreshes on next use'})`;
 }
 
 /**
- * With a key: delete that key's sign-in. Without one: delete every saved sign-in on this
- * machine, which is what "log me out" means to someone whose key is in their AI tool's config.
+ * With TAGPILOT_API_KEY: delete that key's sign-in. Without: delete this device's connection and
+ * every saved key sign-in on this machine.
  */
-export function logout(config: Config, keyCacheFile: string | null): string[] {
-  const files = keyCacheFile ? [keyCacheFile] : savedTokenFiles(config.cacheDir);
+export function logout(config: Config): string[] {
+  const device = deviceFile(config.cacheDir);
+  const hadDevice = !config.apiKey && Boolean(new TokenCache(device).read()?.api_key);
+  const files = config.apiKey
+    ? [keyFile(config)]
+    : [device, ...savedTokenFiles(config.cacheDir)];
   const removed = files.filter((f) => new TokenCache(f).clear());
   const lines = removed.length
     ? removed.map((f) => `Removed ${f}`)
-    : [keyCacheFile ? 'No saved Google sign-in for this API key.' : `No saved Google sign-ins in ${config.cacheDir}.`];
+    : [config.apiKey ? 'No saved Google sign-in for this API key.' : `Nothing saved in ${config.cacheDir}.`];
+  if (hadDevice) {
+    lines.push(`This device's Tag Pilot key stays listed until you revoke it under Connected devices on ${GA4_MCP_PAGE}`);
+  }
   lines.push('To also revoke the access at Google, visit https://myaccount.google.com/permissions');
   return lines;
 }
 
-export function status(config: Config, keyCacheFile: string | null, now = Date.now()): string[] {
+const keyFile = (config: Config) => cacheFileFor(config.cacheDir, config.apiKey!);
+
+export function status(config: Config, now = Date.now()): string[] {
   const lines = [`version: ${VERSION}`, `api url: ${config.apiUrl}`];
-  lines.push(
-    config.apiKey
-      ? `api key: set (${config.apiKey.slice(0, 8)}…)`
-      : 'api key: not set in this shell (normal: your MCP client passes it to the server; set TAGPILOT_API_KEY to check one key)',
-  );
-  if (keyCacheFile) {
-    lines.push(`token file: ${keyCacheFile}`);
-    lines.push(`google: ${describeToken(new TokenCache(keyCacheFile).read(), now)}`);
+  if (config.apiKey) {
+    const file = keyFile(config);
+    lines.push(`credential: TAGPILOT_API_KEY (${keyPrefix(config.apiKey)})`);
+    lines.push(`token file: ${file}`);
+    lines.push(`google: ${describeGoogle(new TokenCache(file).read(), now)}`);
     return lines;
   }
-  const files = savedTokenFiles(config.cacheDir);
-  lines.push(`saved sign-ins: ${files.length}${files.length ? '' : ` (none in ${config.cacheDir}; the first GA4 question in your AI tool signs in)`}`);
-  for (const f of files) lines.push(`  ${f}: ${describeToken(new TokenCache(f).read(), now)}`);
+  const file = deviceFile(config.cacheDir);
+  const device = new TokenCache(file).read();
+  if (device?.api_key) {
+    lines.push(`device: connected (Tag Pilot key ${keyPrefix(device.api_key)}; manage it on ${GA4_MCP_PAGE})`);
+    lines.push(`token file: ${file}`);
+    lines.push(`google: ${describeGoogle(device, now)}`);
+  } else {
+    lines.push('device: not connected (the first GA4 question in your AI tool connects it, or run `npx -y @tagpilot/ga4-mcp login`)');
+  }
+  const keyFiles = savedTokenFiles(config.cacheDir);
+  if (keyFiles.length) {
+    lines.push(`saved TAGPILOT_API_KEY sign-ins: ${keyFiles.length}`);
+    for (const f of keyFiles) lines.push(`  ${f}: ${describeGoogle(new TokenCache(f).read(), now)}`);
+  }
   return lines;
 }
-
-export const LOGIN_NEEDS_KEY =
-  '`login` needs your Tag Pilot API key, e.g.\n' +
-  '  TAGPILOT_API_KEY=tpk_... npx -y @tagpilot/ga4-mcp login\n' +
-  'Usually you do not need it: the first GA4 question in your AI tool opens the Google sign-in.';

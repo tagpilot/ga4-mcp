@@ -2,9 +2,9 @@
   "manifest_version": "0.3",
   "name": "tagpilot-ga4-mcp",
   "display_name": "Tag Pilot GA4",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Free, read-only Google Analytics 4: reports, funnels, realtime and tracking-health checks. Sign in with Google, no Google Cloud setup.",
-  "long_description": "Ask Claude about your Google Analytics 4 data: reports, funnels, realtime, property setup, and Tag Pilot tracking-health checks (duplicate purchases, Unassigned and (not set) traffic).\n\n**No Google Cloud setup.** Paste your free Tag Pilot API key from [app.tagpilot.io/ga4-mcp](https://app.tagpilot.io/ga4-mcp), ask a GA4 question, and sign in with Google in the browser window that opens.\n\n**Read-only and private.** The only Google scope is `analytics.readonly`. Your GA4 data goes from your computer straight to Google; Tag Pilot only brokers the token exchange and stores no Google tokens. The refresh token stays on your computer in `~/.config/tagpilot/ga4-mcp`.",
+  "long_description": "Ask Claude about your Google Analytics 4 data: reports, funnels, realtime, property setup, and Tag Pilot tracking-health checks (duplicate purchases, Unassigned and (not set) traffic).\n\n**No Google Cloud setup.** Install, ask a GA4 question, and approve in the browser window that opens: sign in to (or create) your free Tag Pilot account, confirm the code, and allow read-only Google Analytics access. No API key to copy.\n\n**Read-only and private.** The only Google scope is `analytics.readonly`. Your GA4 data goes from your computer straight to Google; Tag Pilot only brokers the token exchange and stores no Google tokens. The refresh token stays on your computer in `~/.config/tagpilot/ga4-mcp`.",
   "author": {
     "name": "Tag Pilot (Tag Concierge sp. z o.o.)",
     "url": "https://tagpilot.io"
@@ -52,10 +52,10 @@
   "user_config": {
     "api_key": {
       "type": "string",
-      "title": "Tag Pilot API key",
-      "description": "Free key (tpk_…) from the GA4 MCP page at https://app.tagpilot.io/ga4-mcp",
+      "title": "Tag Pilot API key (optional)",
+      "description": "Leave empty: your first GA4 question connects this computer to your free Tag Pilot account in the browser. Only for headless setups: a ga4:mcp key (tpk_…) from https://app.tagpilot.io/ga4-mcp",
       "sensitive": true,
-      "required": true
+      "required": false
     }
   }
 }

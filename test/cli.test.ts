@@ -29,16 +29,16 @@ describe('CLI helpers without the API key in the shell', () => {
     save('tpk_b', { refresh_token: 'r', access_token: 'a', expiry: now - 1 });
     fs.writeFileSync(path.join(dir, 'unrelated.json'), '{}');
 
-    const lines = status(config(), null, now);
+    const lines = status(config(), now);
 
-    assert.match(lines.join('\n'), /api key: not set in this shell \(normal/);
-    assert.ok(lines.includes('saved sign-ins: 2'));
+    assert.match(lines.join('\n'), /device: not connected/);
+    assert.ok(lines.includes('saved TAGPILOT_API_KEY sign-ins: 2'));
     assert.equal(lines.filter((l) => /signed in \(access token valid until 2026-10-27T12:01:00/.test(l)).length, 1);
     assert.equal(lines.filter((l) => /expired, refreshes on next use/.test(l)).length, 1);
   });
 
   test('status with no saved sign-ins says how to sign in', () => {
-    assert.match(status(config(), null, now).join('\n'), /saved sign-ins: 0 \(none in .*first GA4 question/);
+    assert.match(status(config(), now).join('\n'), /device: not connected \(the first GA4 question/);
   });
 
   test('logout without a key removes every saved sign-in, and only those', () => {
@@ -46,7 +46,7 @@ describe('CLI helpers without the API key in the shell', () => {
     save('tpk_b', { refresh_token: 'r' });
     fs.writeFileSync(path.join(dir, 'unrelated.json'), '{}');
 
-    const lines = logout(config(), null);
+    const lines = logout(config());
 
     assert.equal(lines.filter((l) => l.startsWith('Removed ')).length, 2);
     assert.deepEqual(savedTokenFiles(dir), []);
@@ -57,13 +57,13 @@ describe('CLI helpers without the API key in the shell', () => {
     const a = save('tpk_a', { refresh_token: 'r' });
     const b = save('tpk_b', { refresh_token: 'r' });
 
-    logout(config('tpk_a'), a);
+    logout(config('tpk_a'));
 
     assert.equal(fs.existsSync(a), false);
     assert.equal(fs.existsSync(b), true);
   });
 
   test('logout with nothing saved says so', () => {
-    assert.match(logout(config(), null)[0], /No saved Google sign-ins/);
+    assert.match(logout(config())[0], /Nothing saved in/);
   });
 });

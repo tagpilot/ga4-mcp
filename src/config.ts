@@ -37,8 +37,3 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     dataApiUrl: (env.GA4_MCP_DATA_API_URL?.trim() || 'https://analyticsdata.googleapis.com').replace(/\/+$/, ''),
   };
 }
-
-export const MISSING_KEY_MESSAGE =
-  'TAGPILOT_API_KEY is not set. The GA4 MCP is free, but it needs a Tag Pilot API key to sign in with Google: ' +
-  `create one on the GA4 MCP page at ${APP_URL}, then add it to this server's environment, e.g.\n` +
-  '  claude mcp add ga4 --env TAGPILOT_API_KEY=tpk_... -- npx -y @tagpilot/ga4-mcp';

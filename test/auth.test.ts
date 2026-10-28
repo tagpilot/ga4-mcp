@@ -6,7 +6,7 @@ import path from 'node:path';
 import { TokenCache, cacheFileFor } from '../src/auth/cache.js';
 import { BrokerEndpoint } from '../src/auth/endpoints.js';
 import { AuthPendingError, ReauthRequiredError, SignInFailedError, TokenManager } from '../src/auth/token-manager.js';
-import { createAccessTokenSource } from '../src/auth/index.js';
+import { createTokenManager } from '../src/auth/index.js';
 import { loadConfig } from '../src/config.js';
 import { SetupError } from '../src/errors.js';
 import { startMockServer, tempDir, type Recorded } from './helpers.js';
@@ -87,7 +87,8 @@ const managers: TokenManager[] = [];
 function manager(broker: { url: string }, dir: string, extra: Partial<ConstructorParameters<typeof TokenManager>[0]> = {}) {
   const cache = new TokenCache(cacheFileFor(dir, API_KEY));
   const m = new TokenManager({
-    endpoint: new BrokerEndpoint(broker.url, API_KEY),
+    credential: { kind: 'key', apiKey: API_KEY },
+    broker: (key) => new BrokerEndpoint(broker.url, key),
     cache,
     authWaitMs: 5000,
     pollIntervalMs: 10,
@@ -101,7 +102,7 @@ function manager(broker: { url: string }, dir: string, extra: Partial<Constructo
 
 const byPath = (b: Broker, suffix: string) => b.requests.filter((r) => r.path.endsWith(suffix));
 
-describe('broker sign-in (polling)', () => {
+describe('TAGPILOT_API_KEY sign-in (§K, polling)', () => {
   let broker: Broker | undefined;
   afterEach(async () => {
     for (const m of managers.splice(0)) m.close();
@@ -309,9 +310,14 @@ describe('broker sign-in (polling)', () => {
 });
 
 describe('configuration', () => {
-  test('missing TAGPILOT_API_KEY surfaces on first use with a link to the app', async () => {
-    const source = createAccessTokenSource(loadConfig({}));
-    await assert.rejects(source.getAccessToken(), (e: Error) => e instanceof SetupError && /app\.tagpilot\.io/.test(e.message));
+  test('no key → device connect saved in device.json; a key → its own token file', () => {
+    const dir = tempDir();
+    const device = createTokenManager(loadConfig({ GA4_MCP_CONFIG_DIR: dir }));
+    assert.equal(device.mode, 'device');
+    assert.equal(device.cacheFile, path.join(dir, 'device.json'));
+    const keyed = createTokenManager(loadConfig({ GA4_MCP_CONFIG_DIR: dir, TAGPILOT_API_KEY: API_KEY }));
+    assert.equal(keyed.mode, 'key');
+    assert.equal(keyed.cacheFile, cacheFileFor(dir, API_KEY));
   });
 
   test('defaults and overrides', () => {

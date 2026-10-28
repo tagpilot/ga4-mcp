@@ -17,13 +17,13 @@
     "url": "https://github.com/tagpilot/ga4-mcp",
     "source": "github"
   },
-  "version": "0.2.0",
+  "version": "0.3.0",
   "packages": [
     {
       "registryType": "npm",
       "registryBaseUrl": "https://registry.npmjs.org",
       "identifier": "@tagpilot/ga4-mcp",
-      "version": "0.2.0",
+      "version": "0.3.0",
       "runtimeHint": "npx",
       "transport": {
         "type": "stdio"
@@ -31,8 +31,8 @@
       "environmentVariables": [
         {
           "name": "TAGPILOT_API_KEY",
-          "description": "Free Tag Pilot API key (tpk_…) from the GA4 MCP page at https://app.tagpilot.io/ga4-mcp",
-          "isRequired": true,
+          "description": "Optional. Leave unset: the first GA4 question connects this device to your free Tag Pilot account in the browser. Set a ga4:mcp key (tpk_…) only for CI or headless setups.",
+          "isRequired": false,
           "isSecret": true,
           "format": "string",
           "placeholder": "tpk_..."

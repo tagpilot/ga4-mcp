@@ -3,6 +3,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 export interface CachedToken {
+  /** Device connect only: the ga4:mcp key Tag Pilot created for this device. */
+  api_key?: string;
   refresh_token?: string;
   access_token?: string;
   /** Access-token expiry, epoch milliseconds. */
@@ -10,10 +12,17 @@ export interface CachedToken {
   scope?: string;
 }
 
-/** `<dir>/<first 16 hex of sha256(key)>.json`: one cache per API key (or dev client). */
+export const DEVICE_FILE = 'device.json';
+
+/** `<dir>/<first 16 hex of sha256(key)>.json`: one cache per TAGPILOT_API_KEY. */
 export function cacheFileFor(dir: string, key: string): string {
   const id = crypto.createHash('sha256').update(key).digest('hex').slice(0, 16);
   return path.join(dir, `${id}.json`);
+}
+
+/** `<dir>/device.json`: the device-connect credential (its own key + Google tokens). */
+export function deviceFile(dir: string): string {
+  return path.join(dir, DEVICE_FILE);
 }
 
 export class TokenCache {

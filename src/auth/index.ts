@@ -1,27 +1,21 @@
 import type { Config } from '../config.js';
-import { MISSING_KEY_MESSAGE } from '../config.js';
-import { SetupError } from '../errors.js';
 import { openBrowser } from './browser.js';
-import { cacheFileFor, TokenCache } from './cache.js';
-import { BrokerEndpoint } from './endpoints.js';
-import { TokenManager, type AccessTokenSource } from './token-manager.js';
+import { cacheFileFor, deviceFile, TokenCache } from './cache.js';
+import { BrokerEndpoint, DeviceEndpoint } from './endpoints.js';
+import { TokenManager } from './token-manager.js';
 
-export function createTokenManager(config: Config): TokenManager | null {
-  if (!config.apiKey) return null;
+/**
+ * TAGPILOT_API_KEY set → key sign-in with a per-key token file (§K).
+ * Otherwise → device connect, saved in device.json.
+ */
+export function createTokenManager(config: Config, opts: { clientName?: () => string | undefined } = {}): TokenManager {
+  const apiKey = config.apiKey;
   return new TokenManager({
-    endpoint: new BrokerEndpoint(config.apiUrl, config.apiKey),
-    cache: new TokenCache(cacheFileFor(config.cacheDir, config.apiKey)),
+    credential: apiKey ? { kind: 'key', apiKey } : { kind: 'device', device: new DeviceEndpoint(config.apiUrl) },
+    broker: (key) => new BrokerEndpoint(config.apiUrl, key),
+    cache: new TokenCache(apiKey ? cacheFileFor(config.cacheDir, apiKey) : deviceFile(config.cacheDir)),
     authWaitMs: config.authWaitMs,
     openBrowser: config.openBrowser ? (url) => openBrowser(url, config.browser) : undefined,
+    clientName: opts.clientName,
   });
-}
-
-/** Like createTokenManager, but a missing API key surfaces as a clear error on first use, not at startup. */
-export function createAccessTokenSource(config: Config): AccessTokenSource {
-  const manager = createTokenManager(config);
-  if (manager) return manager;
-  return {
-    getAccessToken: () => Promise.reject(new SetupError(MISSING_KEY_MESSAGE)),
-    invalidateAccessToken: () => {},
-  };
 }

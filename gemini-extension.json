@@ -1,23 +1,12 @@
 {
   "name": "tagpilot-ga4",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Free, read-only Google Analytics 4 by Tag Pilot: reports, funnels, realtime and tracking-health checks. Sign in with Google, no Google Cloud setup.",
   "mcpServers": {
     "ga4": {
       "command": "npx",
-      "args": ["-y", "@tagpilot/ga4-mcp@0.2.0"],
-      "env": {
-        "TAGPILOT_API_KEY": "${TAGPILOT_API_KEY}"
-      }
+      "args": ["-y", "@tagpilot/ga4-mcp@0.3.0"]
     }
   },
-  "contextFileName": "GEMINI.md",
-  "settings": [
-    {
-      "name": "Tag Pilot API key",
-      "description": "Free key (tpk_…) from the GA4 MCP page at https://app.tagpilot.io/ga4-mcp",
-      "envVar": "TAGPILOT_API_KEY",
-      "sensitive": true
-    }
-  ]
+  "contextFileName": "GEMINI.md"
 }

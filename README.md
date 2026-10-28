@@ -4,33 +4,35 @@ A free, **read-only** [Model Context Protocol](https://modelcontextprotocol.io) 
 **Google Analytics 4**. Ask Claude, Cursor or any MCP client about your GA4 data: reports,
 funnels, realtime, property setup, and Tag Pilot tracking-health checks.
 
-**No Google Cloud setup.** You don't need your own GCP project, OAuth client, service account or
-`gcloud`. Add the server, sign in with Google in your browser once, and you're done.
+**No Google Cloud setup, no API key to copy.** You don't need a GCP project, OAuth client,
+service account or `gcloud`. Add the server, ask a GA4 question, and approve once in your browser.
 
 ```bash
-claude mcp add ga4 --env TAGPILOT_API_KEY=tpk_... -- npx -y @tagpilot/ga4-mcp
+claude mcp add ga4 -- npx -y @tagpilot/ga4-mcp
 ```
 
 ## Get started
 
-1. **Get a free API key.** Sign up at [app.tagpilot.io](https://app.tagpilot.io) and open the
-   [**GA4 MCP**](https://app.tagpilot.io/ga4-mcp) page. It creates a key (`tpk_…`) and, right
-   after that, shows install buttons and snippets with the key filled in.
-2. **Install** in your AI client (below).
-3. **Ask something**, e.g. *"Which GA4 properties do I have?"* On the first call a browser window
-   opens. Sign in with the Google account that can see your GA4 properties and approve
-   *"See and download your Google Analytics data"*. Then ask again.
+1. **Install** in your AI client (below). No configuration needed.
+2. **Ask something**, e.g. *"Which GA4 properties do I have?"* The first time, a browser window
+   opens (or your AI shows a link and a code like `ABCD-1234`):
+   - sign in to your free [Tag Pilot](https://app.tagpilot.io) account, or create one;
+   - check that the code matches and approve this computer;
+   - sign in with the Google account that can see your GA4 properties and allow
+     *"See and download your Google Analytics data"*.
+3. **Ask again.** You're connected; the computer shows up under **Connected devices** on the
+   [GA4 MCP page](https://app.tagpilot.io/ga4-mcp).
 
 ## Install
 
 | Client | How |
 |---|---|
 | Claude Desktop | [Download the extension](https://github.com/tagpilot/ga4-mcp/releases/latest/download/tagpilot-ga4-mcp.mcpb) and open it (no Node.js needed) |
-| Claude Code | `claude mcp add ga4 --env TAGPILOT_API_KEY=tpk_... -- npx -y @tagpilot/ga4-mcp` |
+| Claude Code | `claude mcp add ga4 -- npx -y @tagpilot/ga4-mcp` |
 | Cursor | **Add to Cursor** button on [app.tagpilot.io/ga4-mcp](https://app.tagpilot.io/ga4-mcp), or `mcp.json` below |
 | VS Code | **Install in VS Code** button on [app.tagpilot.io/ga4-mcp](https://app.tagpilot.io/ga4-mcp) or [tagpilot.io/ga4-mcp](https://tagpilot.io/ga4-mcp) |
 | Gemini CLI | `gemini extensions install https://github.com/tagpilot/ga4-mcp` |
-| Anything else | `npx -y @tagpilot/ga4-mcp` with `TAGPILOT_API_KEY` in its environment |
+| Anything else | `npx -y @tagpilot/ga4-mcp` (stdio) |
 
 Everything except the Claude Desktop extension runs the npm package with `npx`, so it needs
 Node.js 18 or newer. The server is also listed in the
@@ -39,8 +41,8 @@ Node.js 18 or newer. The server is also listed in the
 ### Claude Desktop
 
 Download [`tagpilot-ga4-mcp.mcpb`](https://github.com/tagpilot/ga4-mcp/releases/latest/download/tagpilot-ga4-mcp.mcpb)
-and double-click it (or drag it into Settings → Extensions). Click **Install**, paste your
-`tpk_…` key, and enable it. The extension bundles the server and runs on Claude Desktop's
+and double-click it (or drag it into Settings → Extensions), click **Install** and enable it. Leave
+the optional API key field empty. The extension bundles the server and runs on Claude Desktop's
 built-in Node.js.
 
 Prefer the config file? In `claude_desktop_config.json` (Settings → Developer → Edit Config):
@@ -50,8 +52,7 @@ Prefer the config file? In `claude_desktop_config.json` (Settings → Developer 
   "mcpServers": {
     "ga4": {
       "command": "npx",
-      "args": ["-y", "@tagpilot/ga4-mcp"],
-      "env": { "TAGPILOT_API_KEY": "tpk_..." }
+      "args": ["-y", "@tagpilot/ga4-mcp"]
     }
   }
 }
@@ -60,7 +61,7 @@ Prefer the config file? In `claude_desktop_config.json` (Settings → Developer 
 ### Claude Code
 
 ```bash
-claude mcp add ga4 --env TAGPILOT_API_KEY=tpk_... -- npx -y @tagpilot/ga4-mcp
+claude mcp add ga4 -- npx -y @tagpilot/ga4-mcp
 ```
 
 ### Cursor
@@ -73,8 +74,7 @@ Use the **Add to Cursor** button on the GA4 MCP page, or add to `~/.cursor/mcp.j
   "mcpServers": {
     "ga4": {
       "command": "npx",
-      "args": ["-y", "@tagpilot/ga4-mcp"],
-      "env": { "TAGPILOT_API_KEY": "tpk_..." }
+      "args": ["-y", "@tagpilot/ga4-mcp"]
     }
   }
 }
@@ -83,7 +83,7 @@ Use the **Add to Cursor** button on the GA4 MCP page, or add to `~/.cursor/mcp.j
 ### VS Code
 
 Use the **Install in VS Code** button, or run **MCP: Add Server** → *Command (stdio)* with
-`npx -y @tagpilot/ga4-mcp` and set `TAGPILOT_API_KEY` in the server's `env` in `mcp.json`.
+`npx -y @tagpilot/ga4-mcp`.
 
 ### Gemini CLI
 
@@ -91,27 +91,33 @@ Use the **Install in VS Code** button, or run **MCP: Add Server** → *Command (
 gemini extensions install https://github.com/tagpilot/ga4-mcp
 ```
 
-It asks for your Tag Pilot API key (stored in your system keychain). Change it later with
-`gemini extensions config tagpilot-ga4`.
+Other clients (Windsurf, Zed, …) take the same `command` and `args`.
 
-Other clients (Windsurf, Zed, …) take the same `command`, `args` and `env`.
+### Headless and CI: an API key instead
 
-## How sign-in works, and what Tag Pilot sees
+Where nobody can approve in a browser, create a key on the
+[GA4 MCP page](https://app.tagpilot.io/ga4-mcp) and set `TAGPILOT_API_KEY=tpk_…` in the server's
+environment (e.g. `claude mcp add ga4 --env TAGPILOT_API_KEY=tpk_... -- npx -y @tagpilot/ga4-mcp`).
+With a key, the device connect is skipped and only the Google sign-in link is shown.
+
+## How connecting works, and what Tag Pilot sees
 
 ```
-your machine                              Tag Pilot API                     Google
-──────────────────────────────────────   ──────────────────────────        ──────────────────────
-ga4-mcp makes a PKCE verifier       ──►  POST …/ga4/oauth/session
-(it never leaves your machine)           returns a Google sign-in link
-any browser, any device: Google consent (read-only) ─────────────────►  accounts.google.com
+your machine                              Tag Pilot                          Google
+──────────────────────────────────────   ───────────────────────────       ──────────────────────
+ga4-mcp makes a PKCE verifier       ──►  POST /v3/public/ga4/device
+(it never leaves your machine)           returns a link + code ABCD-1234
+any browser, any device: app.tagpilot.io/connect: log in, check the code, approve
+  → creates a ga4:mcp key for this device → Google consent (read-only) ─►  accounts.google.com
                                          …/ga4/oauth/callback  ◄──────  one-time code
-ga4-mcp polls for the result        ──►  POST …/session/{id}/result
-ga4-mcp exchanges the code + verifier ►  POST …/ga4/oauth/token  ──►    oauth2.googleapis.com
-token saved in ~/.config/tagpilot/ga4-mcp (mode 600)
+ga4-mcp polls for the result        ──►  POST /v3/public/ga4/device/token
+                                         returns the device key + code
+ga4-mcp exchanges code + verifier   ──►  POST …/ga4/oauth/token  ──►    oauth2.googleapis.com
+device key + Google tokens saved in ~/.config/tagpilot/ga4-mcp/device.json (mode 600)
 GA4 API calls  ─────────────────────────────────────────────────────►  analytics*.googleapis.com
 ```
 
-**Sign-in works from any browser**, like `npm login`: nothing listens on your machine, so it also
+**It works from any browser**, like `gh auth login`: nothing listens on your machine, so it also
 works over SSH, in containers, in WSL or on a remote dev box. Open the link wherever you have a
 browser (even your phone) and approve; the server notices within a couple of seconds.
 
@@ -121,14 +127,16 @@ browser (even your phone) and approve; the server notices within a couple of sec
   credentials to Google's token endpoint and returns Google's answer. It **stores no Google
   tokens** and never logs them. The only thing it holds is the one-time sign-in code from the
   Google callback, for at most 10 minutes until your machine collects it; that code is useless
-  without the PKCE verifier that stays on your machine. It it records only that an exchange happened and for which API key
-  (the "last used" time on your GA4 MCP page).
+  without the PKCE verifier that stays on your machine. It records only that an exchange
+  happened and for which device (the "last used" time on your GA4 MCP page).
 - **Read-only.** The only Google scope requested is `analytics.readonly`. None of the tools can
   change anything in GA4.
-- **The refresh token stays on your machine**, in `~/.config/tagpilot/ga4-mcp/<id>.json`
-  (readable only by you). Access tokens are refreshed through Tag Pilot about once an hour.
-- **Revoking:** delete the key on app.tagpilot.io to stop refreshes, run
-  `npx -y @tagpilot/ga4-mcp logout` to delete the local tokens, and remove the app's access at
+- **Your credentials stay on your machine**, in `~/.config/tagpilot/ga4-mcp/device.json`
+  (readable only by you): the device's own Tag Pilot key and the Google refresh token. Access
+  tokens are refreshed through Tag Pilot about once an hour.
+- **Disconnecting:** revoke the device under **Connected devices** on the
+  [GA4 MCP page](https://app.tagpilot.io/ga4-mcp) to stop refreshes, run
+  `npx -y @tagpilot/ga4-mcp logout` to delete the local credential, and remove the app's access at
   [myaccount.google.com/permissions](https://myaccount.google.com/permissions).
 
 ## Tools
@@ -188,27 +196,23 @@ same GA4 quota as the equivalent reports (3–4 report calls).
 
 ## Troubleshooting
 
-**"TAGPILOT_API_KEY is not set"**: add the key to the server's `env` in your MCP client config
-(see above) and restart or reconnect the server.
+**"Connect at … (code ABCD-1234), then ask again"**: open the link in any browser (it doesn't
+have to be on this machine), sign in to Tag Pilot, check that the code matches, approve, and allow
+Google Analytics access. Then repeat the request. The server keeps checking in the background, so
+you don't need to restart anything. The code is valid for 10 minutes; after that, ask again to get
+a new one. To connect from a terminal instead (e.g. over SSH), run
+`npx -y @tagpilot/ga4-mcp login`: it prints the link and code and waits until you approve.
 
-**"Tag Pilot rejected TAGPILOT_API_KEY" / "does not have the ga4:mcp scope"**: create a new key on
-the GA4 MCP page at [app.tagpilot.io](https://app.tagpilot.io). Keys made elsewhere in the app have
-other scopes.
+**"This computer was disconnected from Tag Pilot"**: the device was revoked on the GA4 MCP page,
+so its saved credential was removed. Ask again to connect it again.
 
-**"Finish signing in with Google at …, then ask again"**: open the link in any browser (it
-doesn't have to be on this machine), approve read-only access, then repeat the request. The
-server keeps checking in the background, so you don't need to restart anything. The link is
-valid for 10 minutes; after that, ask again to get a new one. To sign in from a terminal instead
-(e.g. over SSH), run `TAGPILOT_API_KEY=tpk_… npx -y @tagpilot/ga4-mcp login`: it prints the link
-and waits until you approve.
-
-**"Your Google sign-in for GA4 expired or was revoked"**: the saved token was removed. Call any
-tool again and sign in again. Google expires refresh tokens after 6 months without use or when you
-revoke access, and may also expire them after a password change.
+**"Your Google sign-in for GA4 expired or was revoked"**: the saved sign-in was removed. Ask again
+and approve again. Google expires refresh tokens after 6 months without use or when you revoke
+access, and may also expire them after a password change.
 
 **"The signed-in Google account has no access to property …"**: that Google account needs at
 least the Viewer role on the GA4 property. Use `get_account_summaries` to see what it can read. To
-use a different Google account, run `npx -y @tagpilot/ga4-mcp logout` and sign in again.
+use a different Google account, run `npx -y @tagpilot/ga4-mcp logout` and connect again.
 
 **"Google hasn't verified this app"**: shown while Tag Pilot's Google verification is pending
 (beta). Click *Advanced → Go to Tag Pilot*.
@@ -217,28 +221,32 @@ use a different Google account, run `npx -y @tagpilot/ga4-mcp logout` and sign i
 date ranges, fewer dimensions or lower limits, and pass `return_property_quota: true` to see what's
 left.
 
-**Check the setup**: `npx -y @tagpilot/ga4-mcp status` shows the API URL and every saved Google
-sign-in on this machine. Your key normally lives only in your MCP client's config, so `status` and
-`logout` don't need it. Add `TAGPILOT_API_KEY=tpk_…` in front to check or log out one key only.
-`login` does need the key (`TAGPILOT_API_KEY=tpk_… npx -y @tagpilot/ga4-mcp login`), but you
-rarely need it: the first GA4 question in your AI tool opens the sign-in. Logs go to stderr (stdout is the MCP channel); in
-Claude Code see `claude --debug` or `/mcp`.
+**With `TAGPILOT_API_KEY`**: "Tag Pilot rejected TAGPILOT_API_KEY" / "does not have the ga4:mcp
+scope" means the key was revoked or made elsewhere in the app; create one on the GA4 MCP page, or
+remove the variable to use the device connect. Sign-in then shows "Finish signing in with Google at
+…, then ask again".
+
+**Check the setup**: `npx -y @tagpilot/ga4-mcp status` shows whether this computer is connected
+(with the first characters of its Tag Pilot key) and the Google sign-in state. Logs go to stderr
+(stdout is the MCP channel); in Claude Code see `claude --debug` or `/mcp`.
 
 ## Configuration
 
+Nothing is required. All variables are optional:
+
 | Variable | |
 |---|---|
-| `TAGPILOT_API_KEY` | **Required** for the server and `login` (set it in your MCP client's config). Your `tpk_…` key from the GA4 MCP page. |
+| `TAGPILOT_API_KEY` | A `ga4:mcp` key (`tpk_…`) from the GA4 MCP page, for headless/CI setups. Skips the device connect; its sign-in is saved per key. |
 | `TAGPILOT_API_URL` | Tag Pilot API base URL. Default `https://api.tagpilot.io`. |
-| `GA4_MCP_NO_BROWSER` | `1` to only print/return the sign-in link instead of opening a browser. |
+| `GA4_MCP_NO_BROWSER` | `1` to only print/return the link instead of opening a browser. |
 | `GA4_MCP_BROWSER` | Browser to open (macOS app name, or a command on Linux/Windows). |
-| `GA4_MCP_AUTH_WAIT_SECONDS` | How long a tool call waits for the sign-in before returning "finish signing in" with the link (sign-in keeps going in the background). Default 45 (MCP clients often time out at 60 s). |
-| `GA4_MCP_CONFIG_DIR` | Token directory. Default `~/.config/tagpilot/ga4-mcp`. |
+| `GA4_MCP_AUTH_WAIT_SECONDS` | How long a tool call waits for the connect before returning the link (connecting keeps going in the background). Default 45 (MCP clients often time out at 60 s). |
+| `GA4_MCP_CONFIG_DIR` | Credential directory. Default `~/.config/tagpilot/ga4-mcp`. |
 
 Commands: `npx -y @tagpilot/ga4-mcp [serve|login|logout|status|--help|--version]`. Without a
-command it runs the MCP server on stdio. `logout` without a key removes every saved sign-in;
-with `TAGPILOT_API_KEY` set, only that key's. Each key has its own token file, so after switching
-keys the old key's sign-in stays until you run `logout` without a key.
+command it runs the MCP server on stdio. `logout` removes this computer's connection (and any
+saved `TAGPILOT_API_KEY` sign-ins); with `TAGPILOT_API_KEY` set, only that key's. Revoke the
+device itself on the GA4 MCP page.
 
 ## Development
 

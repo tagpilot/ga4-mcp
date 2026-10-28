@@ -1,4 +1,6 @@
-// Client for the Tag Pilot token broker (explorations/ga4-mcp/api-contract.md, v2: polling sign-in).
+// Clients for the Tag Pilot token broker (explorations/ga4-mcp/api-contract.md, v3):
+//   DeviceEndpoint: keyless device connect (D1 start, D5 poll), which hands out a per-device ga4:mcp key.
+//   BrokerEndpoint: key-authenticated calls: token exchange/refresh (D6) and the §K sign-in fallback.
 // The broker holds the Google OAuth client secret; Google tokens are only passed through.
 import { APP_URL } from '../config.js';
 import { SetupError } from '../errors.js';
@@ -38,6 +40,14 @@ export class OAuthGrantError extends Error {
   }
 }
 
+/** Tag Pilot rejected the API key (401: invalid or revoked; 403: lacks ga4:mcp). */
+export class KeyRejectedError extends SetupError {
+  override name = 'KeyRejectedError';
+  constructor(message: string, readonly status: 401 | 403) {
+    super(message);
+  }
+}
+
 /** A broker answer that isn't a success; `message` is already user-facing. */
 export class BrokerError extends Error {
   override name = 'BrokerError';
@@ -74,6 +84,30 @@ function asTokenResponse(json: Json | null): TokenResponse {
   return json as unknown as TokenResponse;
 }
 
+/** Network errors become a readable "could not reach Tag Pilot" error. */
+export class UnreachableError extends Error {
+  override name = 'UnreachableError';
+}
+
+async function postJson(fetchImpl: FetchFn, apiUrl: string, path: string, body: Json, apiKey?: string) {
+  let res: Response;
+  try {
+    res = await fetchImpl(`${apiUrl}${path}`, {
+      method: 'POST',
+      headers: {
+        ...(apiKey ? { authorization: `Bearer ${apiKey}` } : {}),
+        'content-type': 'application/json',
+        accept: 'application/json',
+        'user-agent': USER_AGENT,
+      },
+      body: JSON.stringify(body),
+    });
+  } catch (e) {
+    throw new UnreachableError(`Could not reach Tag Pilot at ${apiUrl} (${(e as Error).message}). Check your connection and TAGPILOT_API_URL.`);
+  }
+  return { res, json: await readJson(res) };
+}
+
 export class BrokerEndpoint implements AuthEndpoint {
   constructor(
     private readonly apiUrl: string,
@@ -103,8 +137,8 @@ export class BrokerEndpoint implements AuthEndpoint {
         if (e.status === 404) return { status: 'not_found' };
         if (e.status === 429 || e.status >= 500) return { status: 'retry', reason: e.message, afterSeconds: e.retryAfter };
       }
-      if (e instanceof BrokerError || e instanceof SetupError) throw e;
-      return { status: 'retry', reason: (e as Error).message }; // network
+      if (e instanceof UnreachableError) return { status: 'retry', reason: e.message };
+      throw e;
     }
     switch (json?.status) {
       case 'pending':
@@ -129,22 +163,7 @@ export class BrokerEndpoint implements AuthEndpoint {
   }
 
   private async post(path: string, body: Json): Promise<Json | null> {
-    let res: Response;
-    try {
-      res = await this.fetchImpl(`${this.apiUrl}${path}`, {
-        method: 'POST',
-        headers: {
-          authorization: `Bearer ${this.apiKey}`,
-          'content-type': 'application/json',
-          accept: 'application/json',
-          'user-agent': USER_AGENT,
-        },
-        body: JSON.stringify(body),
-      });
-    } catch (e) {
-      throw new Error(`Could not reach Tag Pilot at ${this.apiUrl} (${(e as Error).message}). Check your connection and TAGPILOT_API_URL.`);
-    }
-    const json = await readJson(res);
+    const { res, json } = await postJson(this.fetchImpl, this.apiUrl, path, body, this.apiKey);
     if (res.ok) return json;
 
     const message = json && typeof json.message === 'string' ? json.message : undefined;
@@ -156,12 +175,14 @@ export class BrokerEndpoint implements AuthEndpoint {
         }
         throw new BrokerError(`Tag Pilot rejected the request: ${message ?? 'invalid request'}`, 400);
       case 401:
-        throw new SetupError(
-          `Tag Pilot rejected TAGPILOT_API_KEY (invalid or revoked). Create a new key on the GA4 MCP page at ${APP_URL} and update this server's env.`,
+        throw new KeyRejectedError(
+          `Tag Pilot rejected TAGPILOT_API_KEY (invalid or revoked). Create a new key on the GA4 MCP page at ${APP_URL} and update this server's env, or remove TAGPILOT_API_KEY to connect this device in the browser instead.`,
+          401,
         );
       case 403:
-        throw new SetupError(
+        throw new KeyRejectedError(
           `TAGPILOT_API_KEY does not have the "ga4:mcp" scope. Create a key on the GA4 MCP page at ${APP_URL} (it gets the right scope) and update this server's env.`,
+          403,
         );
       case 404:
         throw new BrokerError('Not found', 404);
@@ -176,5 +197,102 @@ export class BrokerEndpoint implements AuthEndpoint {
       default:
         throw new BrokerError(`Tag Pilot returned HTTP ${res.status}${message ? `: ${message}` : ''}. Please try again later.`, res.status);
     }
+  }
+}
+
+// ---------- device connect (D1, D5) ----------
+
+export interface DeviceClientInfo {
+  name?: string;
+  version?: string;
+  hostname?: string;
+}
+
+export interface DeviceSession {
+  deviceCode: string;
+  userCode: string;
+  verificationUri: string;
+  verificationUriComplete: string;
+  /** Seconds between polls. */
+  interval: number;
+  /** Seconds until the session expires. */
+  expiresIn: number;
+}
+
+export type DevicePollResult =
+  | { status: 'pending' }
+  | { status: 'slow_down' }
+  | { status: 'complete'; apiKey: string; code: string }
+  | { status: 'denied'; googleError?: string }
+  | { status: 'expired' }
+  | { status: 'retry'; reason: string; afterSeconds?: number };
+
+const clip = (s: string | undefined) => (s ? s.slice(0, 64) : undefined);
+
+export class DeviceEndpoint {
+  constructor(
+    private readonly apiUrl: string,
+    private readonly fetchImpl: FetchFn = fetch,
+  ) {}
+
+  async start(p: { codeChallenge: string; client: DeviceClientInfo }): Promise<DeviceSession> {
+    const client = Object.fromEntries(
+      Object.entries({ name: clip(p.client.name), version: clip(p.client.version), hostname: clip(p.client.hostname) }).filter(([, v]) => v),
+    );
+    const { res, json } = await postJson(this.fetchImpl, this.apiUrl, '/v3/public/ga4/device', { code_challenge: p.codeChallenge, client });
+    if (!res.ok) {
+      if (res.status === 429) {
+        throw new BrokerError('Too many connect attempts from this network. Wait a few minutes, then ask again.', 429, Number(res.headers.get('retry-after')) || undefined);
+      }
+      if (res.status === 503) {
+        throw new BrokerError('Connecting to Tag Pilot GA4 MCP is not available right now. Please try again later.', 503);
+      }
+      const message = json && typeof json.message === 'string' ? `: ${json.message}` : '';
+      throw new BrokerError(`Tag Pilot returned HTTP ${res.status}${message} when starting the connect.`, res.status);
+    }
+    const str = (k: string) => (json && typeof json[k] === 'string' ? (json[k] as string) : undefined);
+    const num = (k: string) => (json && typeof json[k] === 'number' && (json[k] as number) > 0 ? (json[k] as number) : undefined);
+    const deviceCode = str('device_code');
+    const userCode = str('user_code');
+    const verificationUri = str('verification_uri');
+    if (!deviceCode || !userCode || !verificationUri) throw new Error('Tag Pilot returned an incomplete device session');
+    return {
+      deviceCode,
+      userCode,
+      verificationUri,
+      verificationUriComplete: str('verification_uri_complete') ?? verificationUri,
+      interval: num('interval') ?? 2,
+      expiresIn: num('expires_in') ?? 600,
+    };
+  }
+
+  async poll(deviceCode: string): Promise<DevicePollResult> {
+    let res: Response;
+    let json: Json | null;
+    try {
+      ({ res, json } = await postJson(this.fetchImpl, this.apiUrl, '/v3/public/ga4/device/token', { device_code: deviceCode }));
+    } catch (e) {
+      if (e instanceof UnreachableError) return { status: 'retry', reason: e.message };
+      throw e;
+    }
+    if (res.ok && json?.status === 'complete' && typeof json.api_key === 'string' && typeof json.code === 'string') {
+      return { status: 'complete', apiKey: json.api_key, code: json.code };
+    }
+    if (res.status === 400) {
+      switch (json?.error) {
+        case 'authorization_pending':
+          return { status: 'pending' };
+        case 'slow_down':
+          return { status: 'slow_down' };
+        case 'access_denied':
+          return { status: 'denied', googleError: typeof json.google_error === 'string' ? json.google_error : undefined };
+        case 'expired_token':
+          return { status: 'expired' };
+      }
+    }
+    if (res.status === 429 || res.status >= 500) {
+      return { status: 'retry', reason: `HTTP ${res.status}`, afterSeconds: Number(res.headers.get('retry-after')) || undefined };
+    }
+    throw new Error(`Tag Pilot returned an unexpected answer while connecting (HTTP ${res.status}).`);
   }
 }

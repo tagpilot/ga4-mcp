@@ -21,6 +21,7 @@ const devices = new Map(); // user_code → session
 const keySessions = new Map();
 const seen = [];
 let lastClient;
+let lastProduct;
 
 const server = http.createServer((req, res) => {
   let raw = '';
@@ -43,6 +44,7 @@ const server = http.createServer((req, res) => {
     // --- device connect (v3 D1, D5) ---
     if (url.pathname === '/v3/public/ga4/device') {
       lastClient = body.client;
+      lastProduct = body.product;
       const userCode = `WXYZ-${2000 + devices.size}`;
       devices.set(userCode, { deviceCode: `dev-${userCode}`, status: 'pending' });
       return json(201, {
@@ -150,6 +152,7 @@ const connectUrl = text(first).match(/https?:\/\/\S+/)[0];
 console.log('pending connect:', text(first).split('\n')[0]);
 assert.match(stderr, /confirm the code WXYZ-2000/, 'link and code also on stderr');
 assert.equal(lastClient.name, 'E2E Client', 'device labelled with the MCP client name from initialize');
+assert.equal(lastProduct, 'ga4', 'D1 names the product');
 assert.equal(lastClient.hostname, os.hostname().slice(0, 64));
 
 // The user approves in any browser; background polling collects the key + code and saves device.json.

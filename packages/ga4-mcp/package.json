@@ -33,7 +33,8 @@
   "author": "Tag Concierge sp. z o.o. (https://tagpilot.io)",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/tagpilot/ga4-mcp.git"
+    "url": "git+https://github.com/tagpilot/ga4-mcp.git",
+    "directory": "packages/ga4-mcp"
   },
   "bugs": {
     "url": "https://github.com/tagpilot/ga4-mcp/issues"

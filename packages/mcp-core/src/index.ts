@@ -25,3 +25,4 @@ export {
   type AccessTokenSource,
   type TokenManagerOptions,
 } from './auth/token-manager.js';
+export * from './tool-result.js';

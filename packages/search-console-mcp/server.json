@@ -1,0 +1,55 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.tagpilot/search-console-mcp",
+  "title": "Tag Pilot Search Console",
+  "description": "Free, read-only Google Search Console: performance, opportunities, URL inspection. No GCP setup.",
+  "websiteUrl": "https://tagpilot.io/search-console-mcp",
+  "icons": [
+    {
+      "src": "https://tagpilot.io/favicon.png",
+      "mimeType": "image/png",
+      "sizes": [
+        "256x256"
+      ]
+    }
+  ],
+  "repository": {
+    "url": "https://github.com/tagpilot/ga4-mcp",
+    "source": "github",
+    "subfolder": "packages/search-console-mcp"
+  },
+  "version": "0.1.0",
+  "packages": [
+    {
+      "registryType": "npm",
+      "registryBaseUrl": "https://registry.npmjs.org",
+      "identifier": "@tagpilot/search-console-mcp",
+      "version": "0.1.0",
+      "runtimeHint": "npx",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
+        {
+          "name": "TAGPILOT_API_KEY",
+          "description": "Optional. Leave unset: the first question connects this device to your free Tag Pilot account in the browser. Set a gsc:mcp key (tpk_…) only for CI or headless setups.",
+          "isRequired": false,
+          "isSecret": true,
+          "format": "string",
+          "placeholder": "tpk_..."
+        },
+        {
+          "name": "SEARCH_CONSOLE_MCP_NO_BROWSER",
+          "description": "Set to 1 to only return the Google sign-in link (open it in any browser) instead of opening a browser.",
+          "format": "string"
+        },
+        {
+          "name": "SEARCH_CONSOLE_MCP_AUTH_WAIT_SECONDS",
+          "description": "How long a tool call waits for the browser sign-in before returning the link.",
+          "format": "number",
+          "default": "45"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,49 @@
+{
+  "name": "@tagpilot/search-console-mcp",
+  "version": "0.1.0",
+  "mcpName": "io.github.tagpilot/search-console-mcp",
+  "description": "Free, read-only Google Search Console MCP server by Tag Pilot. Zero Google Cloud setup: approve in your browser, then query search performance, opportunities, URL inspection and sitemaps from Claude, Cursor and other MCP clients.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "bin": {
+    "search-console-mcp": "dist/index.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "NOTICE"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "google-search-console",
+    "search-console",
+    "seo",
+    "tagpilot"
+  ],
+  "homepage": "https://tagpilot.io/search-console-mcp",
+  "scripts": {
+    "build": "node ../../scripts/build.mjs search-console-mcp",
+    "e2e": "node scripts/e2e.mjs",
+    "mcpb": "node ../../scripts/build-mcpb.mjs search-console-mcp",
+    "mcpb:smoke": "node ../../scripts/mcpb-smoke.mjs search-console-mcp",
+    "prepublishOnly": "npm --prefix ../.. run check && npm run build"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.32.2",
+    "zod": "^4.1.0"
+  },
+  "author": "Tag Concierge sp. z o.o. (https://tagpilot.io)",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tagpilot/ga4-mcp.git",
+    "directory": "packages/search-console-mcp"
+  },
+  "bugs": {
+    "url": "https://github.com/tagpilot/ga4-mcp/issues"
+  }
+}

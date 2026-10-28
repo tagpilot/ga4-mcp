@@ -250,18 +250,23 @@ device itself on the GA4 MCP page.
 
 ## Development
 
+This package lives in the [tagpilot/ga4-mcp](https://github.com/tagpilot/ga4-mcp) monorepo next to
+[`@tagpilot/search-console-mcp`](../search-console-mcp); both share the Tag Pilot connect and
+CLI code in `packages/mcp-core`. From the repo root:
+
 ```bash
 npm install
-npm run check      # typecheck + lint + unit tests
-npm run build      # → dist/
-npm run e2e        # built server over stdio against a mock broker and mock Google
-npm run mcpb       # Claude Desktop extension → tagpilot-ga4-mcp-<version>.mcpb (+ tagpilot-ga4-mcp.mcpb)
-npm run mcpb:smoke # unpack the bundle, check its tools, run the e2e against it
+npm run check      # typecheck + lint + unit tests (all packages)
+npm run build      # → packages/*/dist/index.js (esbuild bundles the shared core in)
+npm run e2e        # built servers over stdio against a mock broker and mock Google
+npm run mcpb       # Claude Desktop extensions → packages/*/tagpilot-<name>-<version>.mcpb
+npm run mcpb:smoke # unpack each bundle, check its tools, run the e2e against it
 ```
 
 The version lives in `package.json`, `src/version.ts`, `server.json` (MCP Registry),
-`gemini-extension.json` and `mcpb/manifest.json`; `npm test` fails if they drift apart. Release
-steps are in the Tag Pilot repo, `explorations/ga4-mcp/distribution.md`.
+`mcpb/manifest.json` and the repo-root `gemini-extension.json` (Gemini CLI installs extensions
+from a repo root); `npm test` fails if they drift apart. Release steps are in the Tag Pilot repo,
+`explorations/ga4-mcp/distribution.md`.
 
 The broker contract with the Tag Pilot API is in the Tag Pilot repo,
 `explorations/ga4-mcp/api-contract.md`.

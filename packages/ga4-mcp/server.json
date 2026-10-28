@@ -15,7 +15,8 @@
   ],
   "repository": {
     "url": "https://github.com/tagpilot/ga4-mcp",
-    "source": "github"
+    "source": "github",
+    "subfolder": "packages/ga4-mcp"
   },
   "version": "0.3.0",
   "packages": [

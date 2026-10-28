@@ -18,7 +18,8 @@ const pkg = read('package.json');
 
 test('every manifest carries the package version', () => {
   const server = read('server.json');
-  const gemini = read('gemini-extension.json');
+  // The GA4 Gemini extension stays at the repo root: `gemini extensions install <repo URL>` needs it there.
+  const gemini = read('../../gemini-extension.json');
   const mcpb = read('mcpb/manifest.json');
   assert.equal(VERSION, pkg.version, 'src/version.ts');
   assert.equal(server.version, pkg.version, 'server.json version');

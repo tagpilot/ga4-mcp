@@ -46,3 +46,19 @@ test('the Claude Desktop manifest lists exactly the server tools', async () => {
   assert.deepEqual(listed.sort(), tools.map((t) => t.name).sort());
   await client.close();
 });
+
+test('the README install buttons run this package, with no key', () => {
+  const readme = fs.readFileSync(path.join(root, 'README.md'), 'utf8');
+  const expected = { command: 'npx', args: ['-y', pkg.name] };
+  const cursor = [...readme.matchAll(/https:\/\/cursor\.com\/install-mcp\?[^)\s]+/g)].map((m) => new URL(m[0]));
+  const vscode = [...readme.matchAll(/https:\/\/vscode\.dev\/redirect\/mcp\/install\?[^)\s]+/g)].map((m) => new URL(m[0]));
+  assert.ok(cursor.length > 0 && vscode.length > 0, 'README has Cursor and VS Code links');
+  for (const u of cursor) {
+    assert.equal(u.searchParams.get('name'), 'search-console');
+    assert.deepEqual(JSON.parse(Buffer.from(u.searchParams.get('config') ?? '', 'base64').toString()), expected);
+  }
+  for (const u of vscode) {
+    assert.equal(u.searchParams.get('name'), 'search-console');
+    assert.deepEqual(JSON.parse(u.searchParams.get('config') ?? ''), expected);
+  }
+});

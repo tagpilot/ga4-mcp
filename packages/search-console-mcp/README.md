@@ -29,11 +29,15 @@ connection (and its own Google consent), so you can install either or both.
 
 ## Install
 
+[![Add to Cursor](https://cursor.com/deeplink/mcp-install-dark.svg)](https://cursor.com/install-mcp?name=search-console&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsIkB0YWdwaWxvdC9zZWFyY2gtY29uc29sZS1tY3AiXX0%3D) [![Install in VS Code](https://img.shields.io/badge/VS_Code-Install_server-0098FF?logo=visualstudiocode&logoColor=white)](https://vscode.dev/redirect/mcp/install?name=search-console&config=%7B%22command%22%3A%22npx%22%2C%22args%22%3A%5B%22-y%22%2C%22%40tagpilot%2Fsearch-console-mcp%22%5D%7D)
+
 | Client | How |
 |---|---|
 | Claude Desktop | [Download the extension](https://github.com/tagpilot/ga4-mcp/releases/latest/download/tagpilot-search-console-mcp.mcpb) and open it (no Node.js needed) |
 | Claude Code | `claude mcp add search-console -- npx -y @tagpilot/search-console-mcp` |
-| Cursor, VS Code, Windsurf, Zed, … | command `npx`, args `["-y", "@tagpilot/search-console-mcp"]` (stdio) |
+| Cursor | [Add to Cursor](https://cursor.com/install-mcp?name=search-console&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsIkB0YWdwaWxvdC9zZWFyY2gtY29uc29sZS1tY3AiXX0%3D), or the `mcp.json` below |
+| VS Code | [Install in VS Code](https://vscode.dev/redirect/mcp/install?name=search-console&config=%7B%22command%22%3A%22npx%22%2C%22args%22%3A%5B%22-y%22%2C%22%40tagpilot%2Fsearch-console-mcp%22%5D%7D) |
+| Windsurf, Zed, … | command `npx`, args `["-y", "@tagpilot/search-console-mcp"]` (stdio) |
 | Gemini CLI | clone the repo, then `gemini extensions install ./ga4-mcp/packages/search-console-mcp` |
 
 Everything except the Claude Desktop extension runs the npm package with `npx`, so it needs

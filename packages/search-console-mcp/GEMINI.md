@@ -15,8 +15,10 @@ Every tool is read-only: it can't change anything in Search Console.
 - **Indexing:** `inspect_url` shows Google's indexed version of one URL (not a live test). Its
   quota is 2,000 inspections per day per property, so inspect only a few important URLs.
   `list_sitemaps` / `get_sitemap` show submitted sitemaps and their errors.
-- **Connecting:** no API key is needed. The first call opens a browser to connect this computer.
-  If a tool says "Connect at <link> (code XXXX-XXXX)", show the user the link and code (any
-  browser, any device): they sign in to (or create) a free Tag Pilot account, check the code,
-  approve, and allow read-only Search Console access. Then retry.
+- **Connecting:** no API key is needed. If the user asks to connect, call `connect`; a data tool that
+  isn't connected yet says "Not connected yet" with the same link and code. Show the user the link
+  (clickable) and the code exactly as given: they open it in any browser, sign in to (or create) a
+  free Tag Pilot account, check the code, approve, and allow read-only Search Console access. When they
+  say they're done, call `connection_status` or retry their original question. Never ask the user
+  to run terminal commands.
 - Mention the property and date range you used, and any `notes` in the result.

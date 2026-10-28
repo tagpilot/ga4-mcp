@@ -2,14 +2,15 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { createTokenManager } from './auth/index.js';
-import type { AccessTokenSource } from './auth/token-manager.js';
+import type { AccessTokenSource, ConnectionManager } from './auth/token-manager.js';
 import { logout, status } from './cli.js';
 import { loadConfig } from './config.js';
-import { log } from './log.js';
+import { log, setLogName } from './log.js';
 import type { Product } from './product.js';
+import { createConnectRenderer } from './terminal.js';
 
 export interface CliOptions {
-  createServer: (tokens: AccessTokenSource) => McpServer;
+  createServer: (tokens: AccessTokenSource & ConnectionManager) => McpServer;
   /** One line describing what the server does, for --help. */
   tagline: string;
   /** Extra product-specific env var lines for --help. */
@@ -44,6 +45,7 @@ ${o.extraEnvHelp ?? ''}`;
 }
 
 export async function runCli(product: Product, opts: CliOptions, argv = process.argv.slice(2)): Promise<void> {
+  setLogName(product.slug);
   try {
     await main(product, opts, argv);
   } catch (e) {
@@ -71,19 +73,32 @@ async function main(product: Product, opts: CliOptions, argv: string[]): Promise
       const tokens = createTokenManager(product, config, { clientName: () => clientName() });
       const server = opts.createServer(tokens);
       clientName = () => server.server.getClientVersion()?.name;
+      // stderr usually goes to the MCP host's log: plain lines there, no spinner.
+      const renderer = createConnectRenderer({ product, retryHint: 'Ask your AI assistant again (or call the connect tool) to get a new link.' });
+      tokens.onEvent((e) => renderer.handle(e));
       await server.connect(new StdioServerTransport());
       log(`ready (v${product.version}, ${config.apiUrl}, ${tokens.mode === 'key' ? 'TAGPILOT_API_KEY' : 'device connect'})`);
       return;
     }
     case 'login': {
       const manager = createTokenManager(product, config);
-      process.stderr.write(
-        manager.mode === 'key'
-          ? 'Starting the Google sign-in for TAGPILOT_API_KEY. Open the link below in any browser, on any device; this waits until you approve.\n'
-          : 'Connecting this computer to Tag Pilot. Open the link below in any browser, on any device; this waits until you approve.\n',
-      );
-      await manager.getAccessToken(Number.POSITIVE_INFINITY);
-      process.stderr.write(`Connected. Saved to ${manager.cacheFile}\n`);
+      const state = manager.connectionState();
+      if (state.state === 'connected') {
+        const who = state.mode === 'device' ? `as device '${state.deviceLabel ?? product.label}'` : 'with TAGPILOT_API_KEY';
+        process.stderr.write(`Already connected ${who}. Run \`npx -y ${product.npmName} logout\` first to connect again.\n`);
+        return;
+      }
+      const renderer = createConnectRenderer({ product, animate: true, retryHint: `Run \`npx -y ${product.npmName} login\` to try again.` });
+      manager.onEvent((e) => renderer.handle(e));
+      try {
+        await manager.getAccessToken(Number.POSITIVE_INFINITY);
+      } catch {
+        // The renderer already showed what went wrong and how to retry.
+        renderer.stop();
+        process.exitCode = 1;
+        return;
+      }
+      process.stderr.write(`  Saved to ${manager.cacheFile}\n`);
       return;
     }
     case 'logout':

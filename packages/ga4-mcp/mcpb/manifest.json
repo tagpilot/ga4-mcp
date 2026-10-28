@@ -38,7 +38,9 @@
     { "name": "run_realtime_report", "description": "The last 30 minutes of activity (60 on GA4 360)." },
     { "name": "run_funnel_report", "description": "Funnels from event steps, open or closed, with breakdowns and next actions." },
     { "name": "check_duplicate_transactions", "description": "Tag Pilot check: duplicate purchase events per transaction_id." },
-    { "name": "check_traffic_attribution", "description": "Tag Pilot check: Unassigned, (not set) and Direct traffic shares with likely causes." }
+    { "name": "check_traffic_attribution", "description": "Tag Pilot check: Unassigned, (not set) and Direct traffic shares with likely causes." },
+    { "name": "connect", "description": "Connect this computer: returns a link and code to approve in your browser (free Tag Pilot account + read-only GA4 access)." },
+    { "name": "connection_status", "description": "Whether this computer is connected, waiting for approval, or needs connecting." }
   ],
   "keywords": ["google analytics", "ga4", "analytics", "reports", "tracking", "tagpilot"],
   "license": "Apache-2.0",

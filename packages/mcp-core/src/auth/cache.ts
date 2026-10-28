@@ -5,6 +5,8 @@ import path from 'node:path';
 export interface CachedToken {
   /** Device connect only: the ga4:mcp key Tag Pilot created for this device. */
   api_key?: string;
+  /** Device connect only: the label Tag Pilot shows for this device. */
+  device_label?: string;
   refresh_token?: string;
   access_token?: string;
   /** Access-token expiry, epoch milliseconds. */

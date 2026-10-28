@@ -61,7 +61,7 @@ export function status(product: Product, config: Config, now = Date.now()): stri
   const file = deviceFile(config.cacheDir);
   const device = new TokenCache(file).read();
   if (device?.api_key) {
-    lines.push(`device: connected (Tag Pilot key ${keyPrefix(device.api_key)}; manage it on ${product.pageUrl})`);
+    lines.push(`device: connected${device.device_label ? ` as '${device.device_label}'` : ''} (Tag Pilot key ${keyPrefix(device.api_key)}; manage it on ${product.pageUrl})`);
     lines.push(`token file: ${file}`);
     lines.push(`google: ${describeGoogle(device, now)}`);
   } else {

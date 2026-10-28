@@ -58,6 +58,14 @@
     {
       "name": "get_sitemap",
       "description": "Details of one submitted sitemap."
+    },
+    {
+      "name": "connect",
+      "description": "Connect this computer: returns a link and code to approve in your browser (free Tag Pilot account + read-only Search Console access)."
+    },
+    {
+      "name": "connection_status",
+      "description": "Whether this computer is connected, waiting for approval, or needs connecting."
     }
   ],
   "keywords": [

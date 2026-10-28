@@ -99,6 +99,8 @@ All tools are read-only. `site_url` is the property exactly as `list_sites` show
 | `find_opportunities` | **Tag Pilot analysis.** `low_ctr`: page-one rows with many impressions but under half a typical CTR for their position. `striking_distance`: rows at average positions ~5–20 with enough impressions. |
 | `inspect_url` | URL Inspection: Google's indexed version of one URL (verdict, coverage, last crawl, robots.txt, canonical chosen by Google vs declared, sitemaps, rich results). |
 | `list_sitemaps` / `get_sitemap` | Submitted sitemaps: type, last submitted/downloaded, errors, warnings, submitted URL counts. |
+| `connect` | Connects this computer: returns a link and a code for you to approve in the browser (your AI shows them; clients that support MCP URL elicitation offer to open the link). Say *"connect my Search Console"* to start it explicitly. |
+| `connection_status` | Connected (with the device name), waiting for approval (link and code again), not connected, or what went wrong. Waits up to 25 s for an open sign-in to finish. |
 
 ### Things to know about Search Console data
 
@@ -125,9 +127,12 @@ rows. It's a rule of thumb for prioritising, not Google data or a forecast.
 
 ## Troubleshooting
 
-**"Connect at … (code ABCD-1234), then ask again"**: open the link in any browser, sign in to Tag
-Pilot, check the code, approve, and allow Search Console access. Then repeat the request. The code
-is valid for 10 minutes. From a terminal (e.g. over SSH): `npx -y @tagpilot/search-console-mcp login`.
+**"Not connected yet" (a link and a code like `ABCD-1234`)**: your AI shows them. Open the link in any browser (it doesn't
+have to be on this machine), sign in to Tag Pilot, check that the code matches, approve, and allow Search Console
+access, then tell your AI you're done: it retries your question (or calls `connection_status`). The server keeps
+checking in the background, so nothing needs restarting. The code is valid for 10 minutes; after that, ask again (or
+say "connect Search Console") for a new one. To connect from a terminal instead (e.g. over SSH), run
+`npx -y @tagpilot/search-console-mcp login`: it shows the link, the code in a box and a countdown, and waits until you approve.
 
 **"The signed-in Google account has no access to the Search Console property …"**: use
 `list_sites` and pass `site_url` exactly as listed (`sc-domain:` for domain properties, trailing

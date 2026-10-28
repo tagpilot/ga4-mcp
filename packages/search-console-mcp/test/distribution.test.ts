@@ -9,6 +9,8 @@ import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import { createServer } from '../src/server.js';
 import { VERSION } from '../src/version.js';
+import { PRODUCT } from '../src/product.js';
+import { withConnection } from '../../mcp-core/test/helpers.js';
 
 // Compiled to build-test/packages/search-console-mcp/test/; the package sources are in packages/ga4-mcp.
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../../packages/search-console-mcp');
@@ -37,7 +39,7 @@ test('the MCP Registry name and npm identifier match package.json', () => {
 });
 
 test('the Claude Desktop manifest lists exactly the server tools', async () => {
-  const server = createServer({ async getAccessToken() { return 'x'; }, invalidateAccessToken() {} });
+  const server = createServer(withConnection({ async getAccessToken() { return 'x'; }, invalidateAccessToken() {} }, PRODUCT));
   const [a, b] = InMemoryTransport.createLinkedPair();
   const client = new Client({ name: 'test', version: '0' });
   await Promise.all([server.connect(a), client.connect(b)]);

@@ -144,13 +144,18 @@ const text = (r) => r.content[0].text;
 const { tools } = await client.listTools();
 console.log(`tools (${tools.length}):`, tools.map((t) => t.name).join(', '));
 
-// First call: waits 1 s, then "Connect at <url> (code …), then ask again" while polling goes on.
+// First call: waits 1 s, then returns the link + code for the user while polling goes on.
 const first = await client.callTool({ name: 'get_account_summaries', arguments: {} });
 assert.equal(first.isError, true);
-assert.match(text(first), /^Connect at \S+ \(code WXYZ-2000\), then ask again\./);
-const connectUrl = text(first).match(/https?:\/\/\S+/)[0];
-console.log('pending connect:', text(first).split('\n')[0]);
-assert.match(stderr, /confirm the code WXYZ-2000/, 'link and code also on stderr');
+assert.match(text(first), /^Not connected yet\./);
+assert.match(text(first), /Code: \*\*WXYZ-2000\*\*/);
+const connectUrl = text(first).match(/\]\((https?:\/\/[^)\s]+)\)/)[1];
+console.log('pending connect:', text(first).split('\n')[2]);
+assert.match(stderr, /\[ga4-mcp\] {3}Or go to \S+ and enter the code: WXYZ-2000/, 'link and code also on stderr, plain (not a TTY)');
+assert.doesNotMatch(stderr, /\x1b\[/, 'no ANSI in captured stderr');
+// The connect tool reuses the open session; connection_status reports it as waiting.
+assert.match(text(await client.callTool({ name: 'connect', arguments: {} })), /Code: \*\*WXYZ-2000\*\*/);
+assert.match(text(await client.callTool({ name: 'connection_status', arguments: { wait: false } })), /^waiting: /);
 assert.equal(lastClient.name, 'E2E Client', 'device labelled with the MCP client name from initialize');
 assert.equal(lastProduct, 'ga4', 'D1 names the product');
 assert.equal(lastClient.hostname, os.hostname().slice(0, 64));
@@ -166,6 +171,10 @@ assert.equal(saved.api_key, DEVICE_KEY);
 assert.equal(saved.refresh_token, '1//e2e');
 console.log('device.json: device key + Google tokens, mode 600 ✓');
 
+const status = text(await client.callTool({ name: 'connection_status', arguments: {} }));
+assert.match(status, /^connected: Tag Pilot GA4 MCP is connected as device 'GA4 MCP · E2E Client on /);
+console.log('connection_status →', status);
+assert.match(stderr, /\[ga4-mcp\] Connected as device 'GA4 MCP · E2E Client on /);
 const second = await client.callTool({ name: 'get_account_summaries', arguments: {} });
 assert.equal(second.isError, undefined, text(second));
 console.log('get_account_summaries →', text(second));
@@ -191,7 +200,7 @@ const cli = (args, env) =>
     p.on('exit', (code) => resolve({ code, out }));
   });
 const st = await cli(['status'], baseEnv(configDir));
-assert.match(st.out, /device: connected \(Tag Pilot key tpk_devi…/);
+assert.match(st.out, /device: connected as 'GA4 MCP · E2E Client on .+' \(Tag Pilot key tpk_devi…/);
 assert.ok(!st.out.includes(DEVICE_KEY));
 const lo = await cli(['logout'], baseEnv(configDir));
 assert.match(lo.out, /Removed .*device\.json/);
@@ -216,7 +225,8 @@ async function login(extraEnv, linkPattern, expectFile) {
   });
   const code = await new Promise((r) => p.on('exit', r));
   assert.equal(code, 0, err);
-  assert.match(err, /Connected\. Saved to/);
+  assert.match(err, /Connected as device '.+'\./);
+  assert.match(err, /Saved to/);
   assert.ok(fs.readdirSync(dir).some((f) => expectFile.test(f)));
   fs.rmSync(dir, { recursive: true });
 }

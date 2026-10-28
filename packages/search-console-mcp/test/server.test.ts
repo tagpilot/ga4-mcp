@@ -5,7 +5,8 @@ import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import { createServer } from '../src/server.js';
-import { mockFetch } from '../../mcp-core/test/helpers.js';
+import { mockFetch, withConnection } from '../../mcp-core/test/helpers.js';
+import { PRODUCT } from '../src/product.js';
 
 const TODAY = '2026-10-28';
 
@@ -13,7 +14,7 @@ async function connect(respond: Parameters<typeof mockFetch>[0]) {
   const f = mockFetch(respond);
   let issued = 0;
   const tokens = { getAccessToken: async () => `tok-${++issued}`, invalidateAccessToken: () => {} };
-  const server = createServer(tokens, { fetchImpl: f.fetch }, () => TODAY);
+  const server = createServer(withConnection(tokens, PRODUCT), { fetchImpl: f.fetch }, () => TODAY);
   const [a, b] = InMemoryTransport.createLinkedPair();
   const client = new Client({ name: 'test', version: '0' });
   await Promise.all([server.connect(a), client.connect(b)]);
@@ -39,6 +40,8 @@ describe('Search Console MCP server', () => {
       'compare_periods',
       'find_opportunities',
       'inspect_url',
+      'connect',
+      'connection_status',
     ]);
     for (const t of tools) assert.equal(t.annotations?.readOnlyHint, true, t.name);
     const sa = tools.find((t) => t.name === 'search_analytics')!;

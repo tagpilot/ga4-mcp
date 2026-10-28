@@ -166,14 +166,16 @@ describe('TAGPILOT_API_KEY sign-in (§K, polling)', () => {
     assert.equal(broker.polls(), 0, 'poll_interval is 2 s, so no poll within 300 ms');
   });
 
-  test('sign-in still pending after the wait: "finish signing in" with the URL, polling continues', async () => {
+  test('sign-in still pending after the wait: the link for the user, polling continues', async () => {
     broker = await startBroker();
     let authorizeUrl = '';
     const { m } = manager(broker, tempDir(), { authWaitMs: 50, openBrowser: (u) => (authorizeUrl = u) });
 
     const err = await m.getAccessToken().catch((e: unknown) => e);
     assert.ok(err instanceof AuthPendingError);
-    assert.match(err.message, /Finish signing in with Google at http:\/\/127\.0\.0\.1:\d+\/consent\?session=sess-1 , then ask again/);
+    assert.match(err.message, /^Not connected yet\. Sign in with Google at the link below; show this to the user exactly:/);
+    assert.match(err.message, /\[Sign in with Google for Tag Pilot Test MCP\]\(http:\/\/127\.0\.0\.1:\d+\/consent\?session=sess-1\)/);
+    assert.match(err.message, /retry the original request/);
     assert.ok(broker.polls() > 0, 'polling in the background');
 
     await fetch(authorizeUrl); // the user approves later, e.g. on another device
@@ -272,7 +274,7 @@ describe('TAGPILOT_API_KEY sign-in (§K, polling)', () => {
 
     const err = await m.getAccessToken().catch((e: unknown) => e);
     assert.ok(err instanceof ReauthRequiredError);
-    assert.match(err.message, /browser window opens/);
+    assert.match(err.message, /expired or was revoked.*connect tool/);
     assert.equal(cache.read(), null, 'cache deleted');
     assert.equal(byPath(broker, '/session').length, 0, 'no sign-in during the failing call');
 

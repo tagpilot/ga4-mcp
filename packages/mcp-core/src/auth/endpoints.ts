@@ -1,6 +1,6 @@
 // Clients for the Tag Pilot token broker (explorations/ga4-mcp/api-contract.md, v3):
 //   DeviceEndpoint: keyless device connect (D1 start, D5 poll), which hands out a per-device key
-//   (scope ga4:mcp or gsc:mcp, by the D1 `product`).
+//   (scope ga4:mcp, gsc:mcp or gtm:mcp, by the D1 `product`).
 //   BrokerEndpoint: key-authenticated calls: token exchange/refresh (D6) and the §K sign-in fallback.
 // The broker holds the Google OAuth client secret; Google tokens are only passed through.
 import { SetupError } from '../errors.js';

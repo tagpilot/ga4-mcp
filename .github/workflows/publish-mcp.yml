@@ -7,16 +7,17 @@ name: Publish to MCP Registry
 #
 # Tags: ga4-mcp-v<version> → packages/ga4-mcp (io.github.tagpilot/ga4-mcp)
 #       search-console-mcp-v<version> → packages/search-console-mcp (io.github.tagpilot/search-console-mcp)
+#       gtm-mcp-v<version> → packages/gtm-mcp (io.github.tagpilot/gtm-mcp)
 #       v<version> → packages/ga4-mcp (the scheme before the monorepo)
 on:
   push:
-    tags: ["ga4-mcp-v*", "search-console-mcp-v*", "v*"]
+    tags: ["ga4-mcp-v*", "search-console-mcp-v*", "gtm-mcp-v*", "v*"]
   workflow_dispatch:
     inputs:
       package:
         description: Package to publish
         type: choice
-        options: [ga4-mcp, search-console-mcp]
+        options: [ga4-mcp, search-console-mcp, gtm-mcp]
 
 jobs:
   publish:
@@ -36,6 +37,7 @@ jobs:
           if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
             case "${GITHUB_REF_NAME}" in
               search-console-mcp-v*) NAME=search-console-mcp; TAG_VERSION="${GITHUB_REF_NAME#search-console-mcp-v}" ;;
+              gtm-mcp-v*) NAME=gtm-mcp; TAG_VERSION="${GITHUB_REF_NAME#gtm-mcp-v}" ;;
               ga4-mcp-v*) NAME=ga4-mcp; TAG_VERSION="${GITHUB_REF_NAME#ga4-mcp-v}" ;;
               v*) NAME=ga4-mcp; TAG_VERSION="${GITHUB_REF_NAME#v}" ;;
               *) echo "::error::unknown tag ${GITHUB_REF_NAME}"; exit 1 ;;

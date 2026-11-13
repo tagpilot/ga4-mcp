@@ -1,0 +1,12 @@
+{
+  "name": "tagpilot-gtm",
+  "version": "0.1.0",
+  "description": "Free, read-only Google Tag Manager by Tag Pilot: containers, tags, triggers and variables, workspace diffs against the live version, references and container audits. No Google Cloud setup.",
+  "mcpServers": {
+    "gtm": {
+      "command": "npx",
+      "args": ["-y", "@tagpilot/gtm-mcp@0.1.0"]
+    }
+  },
+  "contextFileName": "GEMINI.md"
+}

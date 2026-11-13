@@ -8,7 +8,7 @@ import { fileURLToPath } from 'node:url';
 import { build } from 'esbuild';
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
-export const PUBLISHED = ['ga4-mcp', 'search-console-mcp'];
+export const PUBLISHED = ['ga4-mcp', 'search-console-mcp', 'gtm-mcp'];
 
 export async function buildPackage(name, { bundleDependencies = false, outfile } = {}) {
   const dir = path.join(root, 'packages', name);

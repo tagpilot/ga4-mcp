@@ -1,7 +1,7 @@
 // What differs between the Tag Pilot MCP servers that share this core (auth, CLI, Google HTTP).
 export interface Product {
   /** Sent to the broker as D1 `product`. */
-  id: 'ga4' | 'gsc';
+  id: 'ga4' | 'gsc' | 'gtm';
   /** npm package, e.g. "@tagpilot/ga4-mcp". */
   npmName: string;
   /** Short slug: user agent `tagpilot-<slug>/<version>` and config dir ~/.config/tagpilot/<slug>. */

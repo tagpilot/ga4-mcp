@@ -1,0 +1,80 @@
+{
+  "manifest_version": "0.3",
+  "name": "tagpilot-gtm-mcp",
+  "display_name": "Tag Pilot GTM",
+  "version": "0.1.0",
+  "description": "Free, read-only Google Tag Manager: containers, tags, triggers and variables, workspace diffs against the live version, references and container audits. No Google Cloud setup.",
+  "long_description": "Ask Claude about your Google Tag Manager containers: what tags fire on which triggers, how a variable or trigger is set up and what uses it, what publishing a workspace would change compared with the live version, the version history, and a Tag Pilot audit (tags that never fire, unused triggers and variables, tags without consent settings, duplicate Google tag IDs, unpublished changes).\n\n**No Google Cloud setup.** Install, ask a GTM question, and approve in the browser window that opens: sign in to (or create) your free Tag Pilot account, confirm the code, and allow read-only Tag Manager access. No API key to copy.\n\n**Read-only and private.** The only Google scope is `tagmanager.readonly`: nothing can be created, changed, published or deleted. Your container data goes from your computer straight to Google; Tag Pilot only brokers the token exchange and stores no Google tokens. The refresh token stays on your computer in `~/.config/tagpilot/gtm-mcp`.",
+  "author": {
+    "name": "Tag Pilot (Tag Concierge sp. z o.o.)",
+    "url": "https://tagpilot.io"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tagpilot/ga4-mcp.git"
+  },
+  "homepage": "https://tagpilot.io/gtm-mcp",
+  "documentation": "https://github.com/tagpilot/ga4-mcp/tree/main/packages/gtm-mcp#readme",
+  "support": "https://github.com/tagpilot/ga4-mcp/issues",
+  "icon": "icon.png",
+  "server": {
+    "type": "node",
+    "entry_point": "server/index.js",
+    "mcp_config": {
+      "command": "node",
+      "args": [
+        "${__dirname}/server/index.js"
+      ],
+      "env": {
+        "TAGPILOT_API_KEY": "${user_config.api_key}"
+      }
+    }
+  },
+  "tools": [
+    { "name": "list_accounts", "description": "Tag Manager accounts you can read, with their IDs." },
+    { "name": "list_containers", "description": "Containers in an account: ID, GTM-XXXX public ID, name, web or server." },
+    { "name": "list_workspaces", "description": "Workspaces of a container (where unpublished changes live)." },
+    { "name": "get_container", "description": "Tags with their triggers, triggers, variables, templates and folders of the live version, a workspace or a version." },
+    { "name": "get_tag", "description": "One tag in full: parameters, triggers, consent settings, sequencing and the variables it uses." },
+    { "name": "get_trigger", "description": "One trigger in full: conditions, and the tags that use it." },
+    { "name": "get_variable", "description": "One variable (or built-in variable) in full, and what uses it." },
+    { "name": "find_references", "description": "What uses a variable, trigger, tag, template or folder." },
+    { "name": "list_versions", "description": "Container versions with entity counts, and which one is live." },
+    { "name": "get_live_version", "description": "The published version: name, description and contents." },
+    { "name": "diff", "description": "What publishing a workspace would add, change or delete compared with the live version." },
+    { "name": "audit_container", "description": "Tag Pilot check: tags that never fire, unused triggers/variables, consent settings, duplicate Google tags, unpublished changes." },
+    { "name": "connect", "description": "Connect this computer: returns a link and code to approve in your browser (free Tag Pilot account + read-only Tag Manager access)." },
+    { "name": "connection_status", "description": "Whether this computer is connected, waiting for approval, or needs connecting." }
+  ],
+  "keywords": [
+    "google tag manager",
+    "gtm",
+    "tag manager",
+    "tracking",
+    "consent mode",
+    "tagpilot"
+  ],
+  "license": "Apache-2.0",
+  "privacy_policies": [
+    "https://tagpilot.io/privacy-policy#google-user-data"
+  ],
+  "compatibility": {
+    "platforms": [
+      "darwin",
+      "win32",
+      "linux"
+    ],
+    "runtimes": {
+      "node": ">=18.0.0"
+    }
+  },
+  "user_config": {
+    "api_key": {
+      "type": "string",
+      "title": "Tag Pilot API key (optional)",
+      "description": "Leave empty: your first GTM question connects this computer to your free Tag Pilot account in the browser. Only for headless setups: a gtm:mcp key (tpk_…) from https://app.tagpilot.io/gtm-mcp",
+      "sensitive": true,
+      "required": false
+    }
+  }
+}

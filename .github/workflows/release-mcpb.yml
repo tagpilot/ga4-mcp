@@ -1,11 +1,12 @@
 name: Release .mcpb extensions
 
-# Attaches BOTH Claude Desktop extensions to every GitHub release, whichever package the release is
+# Attaches ALL THREE Claude Desktop extensions to every GitHub release, whichever package the release is
 # for. The README, app.tagpilot.io and tagpilot.io link to
 #   https://github.com/tagpilot/ga4-mcp/releases/latest/download/tagpilot-ga4-mcp.mcpb
 #   https://github.com/tagpilot/ga4-mcp/releases/latest/download/tagpilot-search-console-mcp.mcpb
-# and "latest" is the newest release of either package, so each release must carry both.
-# Two assets (never exactly one) also keep `gemini extensions install <repo>` on the source archive:
+#   https://github.com/tagpilot/ga4-mcp/releases/latest/download/tagpilot-gtm-mcp.mcpb
+# and "latest" is the newest release of any package, so each release must carry all three.
+# Several assets (never exactly one) also keep `gemini extensions install <repo>` on the source archive:
 # with a single asset, Gemini CLI would install that file as the extension.
 #
 # Runs when a release is published (create it with `gh release create <tag> --generate-notes`),
@@ -47,10 +48,10 @@ jobs:
       - name: Check
         run: npm run check
 
-      - name: Build both bundles
+      - name: Build all bundles
         run: npm run mcpb
 
-      - name: Smoke-test both bundles
+      - name: Smoke-test all bundles
         run: npm run mcpb:smoke
 
       - name: Attach to the release
@@ -60,5 +61,6 @@ jobs:
         run: |
           gh release upload "$TAG" --clobber \
             packages/ga4-mcp/tagpilot-ga4-mcp.mcpb \
-            packages/search-console-mcp/tagpilot-search-console-mcp.mcpb
+            packages/search-console-mcp/tagpilot-search-console-mcp.mcpb \
+            packages/gtm-mcp/tagpilot-gtm-mcp.mcpb
           gh release view "$TAG" --json assets --jq '.assets[].name'

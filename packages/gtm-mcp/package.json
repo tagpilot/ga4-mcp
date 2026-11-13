@@ -1,0 +1,49 @@
+{
+  "name": "@tagpilot/gtm-mcp",
+  "version": "0.1.0",
+  "mcpName": "io.github.tagpilot/gtm-mcp",
+  "description": "Free, read-only Google Tag Manager MCP server by Tag Pilot. Zero Google Cloud setup: approve in your browser, then read containers, tags, triggers and variables, diff a workspace against the live version and audit a container from Claude, Cursor and other MCP clients.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "bin": {
+    "gtm-mcp": "dist/index.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "NOTICE"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "google-tag-manager",
+    "gtm",
+    "tag-manager",
+    "tagpilot"
+  ],
+  "homepage": "https://tagpilot.io/gtm-mcp",
+  "scripts": {
+    "build": "node ../../scripts/build.mjs gtm-mcp",
+    "e2e": "node scripts/e2e.mjs",
+    "mcpb": "node ../../scripts/build-mcpb.mjs gtm-mcp",
+    "mcpb:smoke": "node ../../scripts/mcpb-smoke.mjs gtm-mcp",
+    "prepublishOnly": "npm --prefix ../.. run check && npm run build"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.32.2",
+    "zod": "^4.1.0"
+  },
+  "author": "Tag Concierge sp. z o.o. (https://tagpilot.io)",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tagpilot/ga4-mcp.git",
+    "directory": "packages/gtm-mcp"
+  },
+  "bugs": {
+    "url": "https://github.com/tagpilot/ga4-mcp/issues"
+  }
+}

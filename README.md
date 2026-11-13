@@ -8,6 +8,7 @@ a question, and approve once in your browser.
 |---|---|---|
 | [`@tagpilot/ga4-mcp`](packages/ga4-mcp) | Google Analytics 4: reports, funnels, realtime, property setup, tracking-health checks | `claude mcp add ga4 -- npx -y @tagpilot/ga4-mcp` |
 | [`@tagpilot/search-console-mcp`](packages/search-console-mcp) | Google Search Console: search performance, period comparisons, SEO opportunities, URL inspection, sitemaps | `claude mcp add search-console -- npx -y @tagpilot/search-console-mcp` |
+| [`@tagpilot/gtm-mcp`](packages/gtm-mcp) | Google Tag Manager: containers, tags, triggers and variables, references, workspace diffs against the live version, versions, container audit | `claude mcp add gtm -- npx -y @tagpilot/gtm-mcp` |
 
 Each package README has the install options for Claude Desktop (`.mcpb`), Cursor, VS Code and
 Gemini CLI, how connecting works and what Tag Pilot sees, the tools and troubleshooting.
@@ -21,6 +22,7 @@ packages/mcp-core            shared, not published: device connect, PKCE, token 
                              endpoints, CLI (serve/login/logout/status), Google HTTP client
 packages/ga4-mcp             @tagpilot/ga4-mcp
 packages/search-console-mcp  @tagpilot/search-console-mcp
+packages/gtm-mcp             @tagpilot/gtm-mcp
 scripts/                     build (esbuild), .mcpb build and smoke test
 ```
 
@@ -45,13 +47,13 @@ Per package, from its directory: bump the version in `package.json`, `src/versio
 `gemini-extension.json`); `npm test` checks they match. Then:
 
 1. `npm publish --access public` from the package directory.
-2. Push a tag **`<package>-v<version>`** (`ga4-mcp-v0.3.1`, `search-console-mcp-v0.1.0`): the
+2. Push a tag **`<package>-v<version>`** (`ga4-mcp-v0.3.1`, `search-console-mcp-v0.1.0`, `gtm-mcp-v0.1.0`): the
    *Publish to MCP Registry* workflow publishes that package's `server.json`.
 3. Create a GitHub release for the tag (`gh release create <tag> --generate-notes`). The
-   *Release .mcpb extensions* workflow builds, smoke-tests and attaches **both**
-   `tagpilot-ga4-mcp.mcpb` and `tagpilot-search-console-mcp.mcpb` to every release, so the
+   *Release .mcpb extensions* workflow builds, smoke-tests and attaches **all three**
+   `tagpilot-ga4-mcp.mcpb`, `tagpilot-search-console-mcp.mcpb` and `tagpilot-gtm-mcp.mcpb` to every release, so the
    `releases/latest/download/<asset>` links in the READMEs, the app and the website always work,
-   whichever package was released last. Two assets also keep `gemini extensions install` on the
+   whichever package was released last. Several assets also keep `gemini extensions install` on the
    source archive: with a single asset, Gemini CLI would try to install that file as the extension.
 
 ## License

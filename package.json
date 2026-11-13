@@ -2,7 +2,7 @@
   "name": "tagpilot-mcp-servers",
   "private": true,
   "type": "module",
-  "description": "Tag Pilot's free, read-only MCP servers for Google Analytics 4 and Google Search Console.",
+  "description": "Tag Pilot's free, read-only MCP servers for Google Analytics 4, Google Search Console and Google Tag Manager.",
   "license": "Apache-2.0",
   "workspaces": [
     "packages/*"
@@ -16,9 +16,9 @@
     "lint": "eslint .",
     "test": "rm -rf build-test && tsc -p tsconfig.json && node --test \"build-test/packages/*/test/*.test.js\"",
     "check": "npm run typecheck && npm run lint && npm test",
-    "e2e": "npm run build && npm run e2e --workspace packages/ga4-mcp --workspace packages/search-console-mcp",
-    "mcpb": "npm run build && node scripts/build-mcpb.mjs ga4-mcp && node scripts/build-mcpb.mjs search-console-mcp",
-    "mcpb:smoke": "node scripts/mcpb-smoke.mjs ga4-mcp && node scripts/mcpb-smoke.mjs search-console-mcp"
+    "e2e": "npm run build && npm run e2e --workspace packages/ga4-mcp --workspace packages/search-console-mcp --workspace packages/gtm-mcp",
+    "mcpb": "npm run build && node scripts/build-mcpb.mjs ga4-mcp && node scripts/build-mcpb.mjs search-console-mcp && node scripts/build-mcpb.mjs gtm-mcp",
+    "mcpb:smoke": "node scripts/mcpb-smoke.mjs ga4-mcp && node scripts/mcpb-smoke.mjs search-console-mcp && node scripts/mcpb-smoke.mjs gtm-mcp"
   },
   "devDependencies": {
     "@anthropic-ai/mcpb": "^2.1.2",
